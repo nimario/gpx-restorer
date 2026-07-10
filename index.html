@@ -1177,6 +1177,11 @@ function renderRestoreInfo() {
 // ═══════════════════════════════════════════════════════
 //  계산
 // ═══════════════════════════════════════════════════════
+// 화면 표시용 숫자에 천 단위 쉼표 (내보내기 파일 값·파일명에는 사용하지 않음)
+function fmtNum(n, decimals = 0) {
+  return n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
 function haversine(a, b) {
   const R = 6371000;
   const f1 = a.lat * Math.PI/180, f2 = b.lat * Math.PI/180;
@@ -1232,11 +1237,11 @@ function calcRawGain() {
 function renderStats(s) {
   const totalDist = cumDist[cumDist.length - 1];
   document.getElementById('statDist').textContent =
-    totalDist >= 1000 ? (totalDist/1000).toFixed(2) + ' km' : Math.round(totalDist) + ' m';
-  document.getElementById('statGain').textContent = Math.round(s.gain)   + ' m';
-  document.getElementById('statLoss').textContent = Math.round(s.loss)   + ' m';
-  document.getElementById('statMax').textContent  = Math.round(s.maxEle) + ' m';
-  document.getElementById('statMin').textContent  = Math.round(s.minEle) + ' m';
+    totalDist >= 1000 ? fmtNum(totalDist/1000, 2) + ' km' : fmtNum(Math.round(totalDist)) + ' m';
+  document.getElementById('statGain').textContent = fmtNum(Math.round(s.gain))   + ' m';
+  document.getElementById('statLoss').textContent = fmtNum(Math.round(s.loss))   + ' m';
+  document.getElementById('statMax').textContent  = fmtNum(Math.round(s.maxEle)) + ' m';
+  document.getElementById('statMin').textContent  = fmtNum(Math.round(s.minEle)) + ' m';
   statsGrid.style.display = 'grid';
   renderGainCompare();
 }
@@ -1244,13 +1249,13 @@ function renderStats(s) {
 function renderGainCompare() {
   const el = document.getElementById('gainCompare');
   if (!lastResult || !lastResult.restoredCount) { el.textContent = ''; return; }
-  el.textContent = t('ridingazuaLabel') + ': ' + Math.round(lastResult.ridingazuaGain) + ' m';
+  el.textContent = t('ridingazuaLabel') + ': ' + fmtNum(Math.round(lastResult.ridingazuaGain)) + ' m';
 }
 
 function updateRef(threshold) {
   const s = calcStats(threshold);
-  document.getElementById('refGain').textContent = Math.round(s.gain) + ' m';
-  document.getElementById('refLoss').textContent = Math.round(s.loss) + ' m';
+  document.getElementById('refGain').textContent = fmtNum(Math.round(s.gain)) + ' m';
+  document.getElementById('refLoss').textContent = fmtNum(Math.round(s.loss)) + ' m';
   document.getElementById('refNote').style.display = threshold === 0 ? 'inline' : 'none';
 }
 
@@ -1269,8 +1274,8 @@ function renderWaypoints() {
     <div class="wpt-row">
       <div class="wpt-ico">${wptIcon(w.typeAttr)}</div>
       <div class="wpt-name">${escapeHtml(decodeXml(w.nameRaw))}<small>${escapeHtml(w.typeAttr)}</small></div>
-      <div class="wpt-km">${w.km.toFixed(1)} km</div>
-      <div class="wpt-ele">${Math.round(w.ele)} m</div>
+      <div class="wpt-km">${fmtNum(w.km, 1)} km</div>
+      <div class="wpt-ele">${fmtNum(Math.round(w.ele))} m</div>
     </div>`).join('');
   wptWrap.style.display = 'block';
 }
@@ -1328,7 +1333,7 @@ function drawChart() {
           titleColor: '#5a7a9a', bodyColor: '#dde5ef', padding: 10,
           callbacks: {
             title: it => t('ttDist') + ': ' + it[0].label,
-            label: it => t('ttEle') + ': ' + Number(it.raw).toFixed(1) + ' m'
+            label: it => t('ttEle') + ': ' + fmtNum(Number(it.raw), 1) + ' m'
           }
         }
       },
