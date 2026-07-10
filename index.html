@@ -528,7 +528,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v1.1</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v1.1.1</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -665,7 +665,7 @@
 
 </main>
 
-<footer id="footerText">v1.1 (2026.07.10) · Made by 오동도</footer>
+<footer id="footerText">v1.1.1 (2026.07.10) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -806,7 +806,7 @@ function applyLang() {
 }
 function renderFooter() {
   document.getElementById('footerText').textContent =
-    'v1.1 (2026.07.10) · Made by ' + t('authorName');
+    'v1.1.1 (2026.07.10) · Made by ' + t('authorName');
 }
 document.querySelectorAll('.lang-switch button').forEach(b =>
   b.addEventListener('click', () => { lang = b.dataset.lang; applyLang(); }));
@@ -956,8 +956,7 @@ document.getElementById('btnTcx').addEventListener('click', () => {
 });
 
 function exportName(name) {
-  const gain = lastResult ? Math.round(lastResult.gain) : 0;
-  return sanitizeFilename(name) + '_' + gain;
+  return sanitizeFilename(name);
 }
 function sanitizeFilename(s) {
   return s.replace(/[\\/:*?"<>|]/g, '_').trim() || 'course';
@@ -1373,6 +1372,35 @@ function applyCourseNameToGpx(text, name) {
     out = out.replace(/<trk>/, '<trk><name>' + esc + '</name>');
   }
 
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════
+//  GPX 생성 (TCX 입력 → GPX 출력용, 2.gpx 구조 재현)
+// ═══════════════════════════════════════════════════════
+function buildGpx(name) {
+  const esc = escapeHtml(name);
+  let out = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  out += '<gpx xmlns="http://www.topografix.com/GPX/1/1" creator="MTK - http://www.toursprung.com" version="1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">\n';
+  out += '<metadata>\n<name>' + esc + '</name>\n<extensions><extra>{}</extra></extensions>\n</metadata>\n';
+
+  for (const w of waypoints) {
+    const typeAttr = w.typeAttr || 'Generic';
+    out += '<wpt lat="' + w.latStr + '" lon="' + w.lonStr + '" sectionIndex="' + w.secIdx + '" pointIndex="' + (w.ptIdx !== undefined ? w.ptIdx : w.arrIdx) + '" type="' + typeAttr + '">'
+        + '<name>' + w.nameRaw + '</name>'
+        + '<ele>' + w.eleStr + '</ele>'
+        + '<type>' + typeAttr.toUpperCase() + '</type>'
+        + '<note>' + w.noteRaw + '</note>'
+        + '</wpt>\n';
+  }
+
+  out += '<trk>\n<name>' + esc + '</name>\n<trkseg>\n';
+  for (const p of points) {
+    out += '<trkpt lat="' + p.latStr + '" lon="' + p.lonStr + '"' + p.attrStr + '>'
+        + '<ele>' + p.eleStr + '</ele>'
+        + '</trkpt>\n';
+  }
+  out += '</trkseg>\n</trk>\n</gpx>';
   return out;
 }
 
