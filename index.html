@@ -124,6 +124,147 @@
     color:#04202f;
   }
 
+  /* ── Tabs ── */
+  #tabSwitch {
+    display:flex;
+    gap:8px;
+    margin-bottom:18px;
+  }
+  .tab-btn {
+    flex:1;
+    padding:13px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--dim);
+    font-weight:800;
+    font-size:.88rem;
+    cursor:pointer;
+    font-family:inherit;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .tab-btn.active {
+    background:linear-gradient(135deg, #123a5c, #0e4e6e);
+    color:#e8f4fc;
+    border-color:#2a6a95;
+  }
+
+  /* ── Strava correction tab ── */
+  #stravaOptionsBar {
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:18px;
+    font-size:.84rem;
+  }
+  #stravaOptionsBar label { color:var(--dim); white-space:nowrap; flex-shrink:0; }
+  #stravaCourseName, #stravaFormatSelect {
+    flex:1;
+    min-width:120px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:9px 12px;
+    color:var(--text);
+    font-size:.88rem;
+    font-family:inherit;
+    outline:none;
+  }
+  #stravaCourseName:focus { border-color:var(--accent); }
+
+  #stravaErrorMsg {
+    display:none;
+    background:#2a1420;
+    border:1px solid #6b2535;
+    border-radius:10px;
+    color:#fca5a5;
+    padding:12px 16px;
+    font-size:.87rem;
+    margin-bottom:16px;
+    white-space:pre-line;
+  }
+
+  #stravaFileBadge {
+    display:none;
+    align-items:center;
+    gap:8px;
+    background:#0d1e35;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 14px;
+    font-size:.84rem;
+    color:var(--accent);
+    margin:18px 0 12px;
+  }
+
+  #stravaRunBtn {
+    display:none;
+    width:100%;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    background:linear-gradient(135deg, #0e7a46, #16a34a);
+    border:1px solid #2ecf74;
+    border-radius:12px;
+    color:#eafff3;
+    font-size:1.05rem;
+    font-weight:800;
+    padding:16px 20px;
+    cursor:pointer;
+    font-family:inherit;
+    margin-bottom:16px;
+  }
+  #stravaRunBtn:hover { filter:brightness(1.15); }
+
+  #stravaProgress {
+    display:none;
+    align-items:center;
+    gap:12px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:16px;
+    margin-bottom:16px;
+    font-size:.87rem;
+    color:var(--dim);
+  }
+  .spinner {
+    width:20px; height:20px;
+    border:3px solid var(--border);
+    border-top-color:var(--accent);
+    border-radius:50%;
+    animation:spin .8s linear infinite;
+    flex-shrink:0;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  #stravaResult {
+    display:none;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px;
+    margin-bottom:16px;
+  }
+  #stravaResult p { font-size:.87rem; color:var(--text); line-height:1.6; margin-bottom:14px; }
+  #stravaDownloadBtn {
+    width:100%;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:linear-gradient(135deg, #123a5c, #0e4e6e);
+    border:1px solid #2a6a95;
+    border-radius:12px;
+    color:#e8f4fc;
+    font-weight:800;
+    padding:14px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+
   /* ── Usage guide ── */
   #guideBox {
     background:var(--surface);
@@ -465,7 +606,7 @@
   }
   .wpt-row {
     display:grid;
-    grid-template-columns:36px 1fr 80px 76px;
+    grid-template-columns:36px 1fr 80px 76px 52px;
     align-items:center;
     gap:10px;
     padding:9px 6px;
@@ -478,6 +619,49 @@
   .wpt-name small { display:block; font-weight:400; font-size:.72rem; color:var(--dim); }
   .wpt-km   { text-align:right; color:var(--dist);   font-weight:700; font-variant-numeric:tabular-nums; }
   .wpt-ele  { text-align:right; color:var(--accent); font-weight:700; font-variant-numeric:tabular-nums; }
+
+  .wpt-actions { display:flex; gap:2px; justify-content:flex-end; }
+  .wpt-actions button {
+    width:24px; height:24px;
+    border:none; background:none;
+    font-size:.88rem;
+    cursor:pointer;
+    padding:0;
+    opacity:.65;
+    border-radius:6px;
+  }
+  .wpt-actions button:hover { opacity:1; background:rgba(255,255,255,.08); }
+
+  .wpt-row.wpt-editing {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:8px;
+    padding:10px 6px;
+  }
+  .wpt-edit-type, .wpt-edit-name {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:7px 10px;
+    color:var(--text);
+    font-size:.85rem;
+    font-family:inherit;
+    outline:none;
+  }
+  .wpt-edit-type:focus, .wpt-edit-name:focus { border-color:var(--accent); }
+  .wpt-edit-name { flex:1; min-width:90px; }
+  .wpt-save-btn, .wpt-cancel-btn {
+    width:30px; height:30px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--surface);
+    cursor:pointer;
+    font-size:.85rem;
+    flex-shrink:0;
+  }
+  .wpt-save-btn { color:var(--gain); border-color:var(--gain); }
+  .wpt-cancel-btn { color:var(--dim); }
 
   /* ── Chart ── */
   #chartWrap {
@@ -517,7 +701,7 @@
     h1 { font-size:1.28rem; }
     #exportBar { flex-direction:column; }
     #courseNameBar { flex-direction:column; align-items:stretch; gap:6px; }
-    .wpt-row { grid-template-columns:30px 1fr 66px 62px; font-size:.82rem; }
+    .wpt-row { grid-template-columns:30px 1fr 60px 54px 46px; font-size:.82rem; }
     .sub { padding-left:0; }
   }
 </style>
@@ -528,7 +712,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v1.1.1</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v2.0</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -537,6 +721,70 @@
   </div>
 </div>
 <p class="sub" data-i18n="sub">라이딩가즈아로 작업한 GPX / TCX를 올리면 원본 고도를 복원하고, GPX / TCX로 내보냅니다</p>
+
+<!-- 탭 전환 -->
+<div id="tabSwitch">
+  <button class="tab-btn" data-tab="strava" id="tabBtnStrava">① 스트라바 보정</button>
+  <button class="tab-btn active" data-tab="restore" id="tabBtnRestore">② 원본고도 복원</button>
+</div>
+
+<!-- 탭: 스트라바 보정 -->
+<div id="tabPanelStrava" class="tab-panel" style="display:none;">
+
+  <div id="guideBox">
+    <h2>사용 방법</h2>
+    <p class="guide-bg">시간 정보 없는 경로 GPX(라이딩가즈아든 카카오맵이든 어디서 만든 것이든)를 스트라바에 "가짜 라이딩"으로 업로드했다 받아서 고도를 보정합니다. 스트라바는 실제 사용자들이 기록한 데이터를 기반으로 하기 때문에, 위성 지도 근사값보다 정확한 경우가 많습니다.</p>
+    <ol>
+      <li>고도를 보정하고 싶은 GPX 파일 업로드 (시간 정보 없어도 자동 처리)</li>
+      <li>[보정 시작] 클릭 — 스트라바에 업로드→보정값 수신→가짜 기록 삭제까지 자동 처리</li>
+      <li>완성된 GPX/TCX를 다운로드 → 라이딩가즈아에 넣고 웨이포인트 작업 → 다시 내보내기</li>
+      <li>그 파일을 <b>② 원본고도 복원</b> 탭에 올려서 최종 마무리</li>
+    </ol>
+  </div>
+
+  <div id="stravaErrorMsg"></div>
+
+  <!-- 업로드 -->
+  <div class="upload-zone" id="stravaUploadZone">
+    <svg class="mountain" viewBox="0 0 200 80" width="200" height="80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polyline points="0,80 40,20 70,45 100,5 130,35 160,18 200,80" stroke="#38bdf8" stroke-width="2" fill="rgba(56,189,248,0.08)"/>
+    </svg>
+    <div class="upload-title">GPX 파일을 드래그하거나 클릭해서 업로드</div>
+    <div class="upload-hint">시간 정보가 없는 경로 파일도 자동으로 채워서 처리합니다</div>
+    <input type="file" id="stravaFileInput" accept=".gpx">
+  </div>
+
+  <div id="stravaFileBadge">
+    <span>📄</span>
+    <span class="fname" id="stravaFileName"></span>
+  </div>
+
+  <div id="stravaOptionsBar">
+    <label for="stravaCourseName">코스 이름</label>
+    <input type="text" id="stravaCourseName" autocomplete="off" spellcheck="false">
+    <label for="stravaFormatSelect">내보낼 형식</label>
+    <select id="stravaFormatSelect">
+      <option value="gpx">GPX</option>
+      <option value="tcx">TCX</option>
+    </select>
+  </div>
+
+  <button id="stravaRunBtn"><span class="ico">▶</span>보정 시작</button>
+
+  <div id="stravaProgress">
+    <div class="spinner"></div>
+    <span id="stravaProgressText">스트라바에 업로드하는 중...</span>
+  </div>
+
+  <div id="stravaResult">
+    <p id="stravaResultText"></p>
+    <button type="button" id="stravaDownloadBtn"><span class="ico">⬇️</span>다운로드</button>
+  </div>
+
+</div>
+
+<!-- 탭: 원본고도 복원 (기존 도구) -->
+<div id="tabPanelRestore" class="tab-panel">
 
 <!-- 사용법 안내 -->
 <div id="guideBox">
@@ -663,9 +911,11 @@
   <canvas id="elevChart"></canvas>
 </div>
 
+</div><!-- /tabPanelRestore -->
+
 </main>
 
-<footer id="footerText">v1.1.1 (2026.07.10) · Made by 오동도</footer>
+<footer id="footerText">v2.0 (2026.07.24) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -806,7 +1056,7 @@ function applyLang() {
 }
 function renderFooter() {
   document.getElementById('footerText').textContent =
-    'v1.1.1 (2026.07.10) · Made by ' + t('authorName');
+    'v2.0 (2026.07.24) · Made by ' + t('authorName');
 }
 document.querySelectorAll('.lang-switch button').forEach(b =>
   b.addEventListener('click', () => { lang = b.dataset.lang; applyLang(); }));
@@ -832,6 +1082,33 @@ const WPT_ICONS = {
 };
 const wptIcon = type => WPT_ICONS[(type || '').toLowerCase()] || '📍';
 
+// 편집 드롭다운 표시용 — 라벨은 한글, 저장되는 값(type)은 가민 표준 영문 그대로
+const WPT_TYPE_OPTIONS = [
+  { value:'Generic',       label:'일반' },
+  { value:'Summit',        label:'정상' },
+  { value:'Valley',        label:'계곡' },
+  { value:'Water',         label:'물' },
+  { value:'Food',          label:'음식' },
+  { value:'Danger',        label:'위험' },
+  { value:'Left',          label:'좌회전' },
+  { value:'Right',         label:'우회전' },
+  { value:'Straight',      label:'직진' },
+  { value:'First Aid',     label:'응급처치' },
+  { value:'4th Category',  label:'4등급 오르막' },
+  { value:'3rd Category',  label:'3등급 오르막' },
+  { value:'2nd Category',  label:'2등급 오르막' },
+  { value:'1st Category',  label:'1등급 오르막' },
+  { value:'Hors Category', label:'무제한급 오르막' },
+  { value:'Sprint',        label:'스프린트' }
+];
+function wptTypeLabel(type) {
+  const found = WPT_TYPE_OPTIONS.find(o => o.value.toLowerCase() === (type || '').toLowerCase());
+  return found ? found.label : (type || '일반');
+}
+function escapeAttr(s) { return escapeHtml(s).replace(/"/g, '&quot;'); }
+
+let editingWptIdx = null; // 현재 편집 중인 웨이포인트 인덱스 (없으면 null)
+
 // ═══════════════════════════════════════════════════════
 //  DOM refs
 // ═══════════════════════════════════════════════════════
@@ -852,6 +1129,132 @@ const chartWrap      = document.getElementById('chartWrap');
 const errorMsg       = document.getElementById('errorMsg');
 const threshSlid     = document.getElementById('threshold');
 const threshVal      = document.getElementById('threshVal');
+
+// ═══════════════════════════════════════════════════════
+//  탭 전환
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tabPanelStrava').style.display  = btn.dataset.tab === 'strava'  ? 'block' : 'none';
+    document.getElementById('tabPanelRestore').style.display = btn.dataset.tab === 'restore' ? 'block' : 'none';
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+//  스트라바 보정 탭
+// ═══════════════════════════════════════════════════════
+// 배포한 Cloudflare Workers 주소. 실제 배포 후 이 값만 바꿔주면 됩니다.
+const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.dev';
+
+(function stravaTab() {
+  const sErrorMsg      = document.getElementById('stravaErrorMsg');
+  const sUploadZone    = document.getElementById('stravaUploadZone');
+  const sFileInput     = document.getElementById('stravaFileInput');
+  const sFileBadge     = document.getElementById('stravaFileBadge');
+  const sFileName      = document.getElementById('stravaFileName');
+  const sCourseName    = document.getElementById('stravaCourseName');
+  const sFormatSelect  = document.getElementById('stravaFormatSelect');
+  const sRunBtn        = document.getElementById('stravaRunBtn');
+  const sProgress      = document.getElementById('stravaProgress');
+  const sProgressText  = document.getElementById('stravaProgressText');
+  const sResult        = document.getElementById('stravaResult');
+  const sResultText    = document.getElementById('stravaResultText');
+  const sDownloadBtn   = document.getElementById('stravaDownloadBtn');
+
+  let pendingFile = null;
+  let resultData  = null; // { content, filename }
+
+  function backendUrl() {
+    return STRAVA_BACKEND_URL.replace(/\/+$/, '');
+  }
+
+  function showSError(msg) {
+    sErrorMsg.textContent = '⚠️ ' + msg;
+    sErrorMsg.style.display = 'block';
+  }
+  function hideSError() { sErrorMsg.style.display = 'none'; }
+
+  // ── 파일 업로드 ──
+  sUploadZone.addEventListener('click', () => { sFileInput.value = ''; sFileInput.click(); });
+  sUploadZone.addEventListener('dragover', e => { e.preventDefault(); sUploadZone.classList.add('over'); });
+  sUploadZone.addEventListener('dragleave', () => sUploadZone.classList.remove('over'));
+  sUploadZone.addEventListener('drop', e => {
+    e.preventDefault(); sUploadZone.classList.remove('over');
+    const f = e.dataTransfer.files[0];
+    if (f) handleSFile(f);
+  });
+  sFileInput.addEventListener('change', e => {
+    const f = e.target.files[0];
+    sFileInput.value = '';
+    if (f) handleSFile(f);
+  });
+
+  function handleSFile(file) {
+    hideSError();
+    if (!file.name.toLowerCase().endsWith('.gpx')) {
+      showSError('.gpx 파일만 업로드할 수 있습니다.');
+      return;
+    }
+    pendingFile = file;
+    sFileName.textContent = file.name;
+    sFileBadge.style.display = 'flex';
+    sCourseName.value = file.name.replace(/\.gpx$/i, '');
+    sRunBtn.style.display = 'flex';
+    sResult.style.display = 'none';
+  }
+
+  // ── 보정 실행 ──
+  sRunBtn.addEventListener('click', async () => {
+    const url = backendUrl();
+    if (!url || url.includes('YOUR-SUBDOMAIN')) { showSError('백엔드 서버 주소가 설정되지 않았습니다. 배포 후 STRAVA_BACKEND_URL 값을 채워주세요.'); return; }
+    if (!pendingFile) return;
+    hideSError();
+    sResult.style.display = 'none';
+    sRunBtn.style.display = 'none';
+    sProgress.style.display = 'flex';
+    sProgressText.textContent = '스트라바에 업로드하는 중... (최대 1분 정도 걸릴 수 있습니다)';
+
+    try {
+      const form = new FormData();
+      form.append('file', pendingFile);
+      form.append('format', sFormatSelect.value);
+      form.append('name', sCourseName.value || pendingFile.name.replace(/\.gpx$/i, ''));
+
+      const res = await fetch(url + '/api/correct', { method: 'POST', body: form });
+      const data = await res.json();
+
+      if (!res.ok || data.error) throw new Error(data.error || '알 수 없는 오류');
+
+      resultData = { content: data.content, filename: data.filename };
+
+      let msg = '보정 완료. 원본 ' + data.originalPointCount + '개 포인트 → 보정 결과 ' + data.correctedPointCount + '개 포인트.';
+      if (data.originalPointCount !== data.correctedPointCount) {
+        msg += ' (스트라바가 포인트 수를 조정했습니다.)';
+      }
+      sResultText.textContent = msg;
+      sResult.style.display = 'block';
+    } catch (err) {
+      showSError('보정 실패: ' + err.message);
+      sRunBtn.style.display = 'flex';
+    } finally {
+      sProgress.style.display = 'none';
+    }
+  });
+
+  sDownloadBtn.addEventListener('click', () => {
+    if (!resultData) return;
+    const mime = resultData.filename.endsWith('.tcx') ? 'application/vnd.garmin.tcx+xml' : 'application/gpx+xml';
+    const blob = new Blob([resultData.content], { type: mime });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = resultData.filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+})();
 
 // ═══════════════════════════════════════════════════════
 //  Upload → 실행 대기
@@ -924,6 +1327,7 @@ function goHome() {
   uploadedFormat = 'gpx';
   points = []; waypoints = []; cumDist = [];
   restoredGpxText = '';
+  editingWptIdx = null;
   courseNameInput.value = '';
   threshSlid.value = 0;
   threshVal.textContent = '0 m';
@@ -971,6 +1375,7 @@ function process(text, fname, format) {
   points = [];
   waypoints = [];
   restoredGpxText = '';
+  editingWptIdx = null;
 
   const { restoredCount, osmCount, mismatches } =
     format === 'tcx' ? parseTcxInput(text) : parseGpxInput(text);
@@ -1064,7 +1469,7 @@ function parseGpxInput(text) {
     });
   }
 
-  // ── 복원 GPX 생성 (ele만 교체, name은 export 시점에 적용) ──
+  // ── 복원 GPX 생성 (ele만 교체, wpt는 마커로 스트립 → export 시점에 현재 상태로 재조립) ──
   let ti = 0;
   restoredGpxText = text.replace(trkRe, (full, attrs, inner) => {
     const p = points[ti++];
@@ -1072,12 +1477,11 @@ function parseGpxInput(text) {
     return '<trkpt' + attrs + '>' +
       inner.replace(/<ele>[^<]*<\/ele>/, '<ele>' + p.eleStr + '</ele>') + '</trkpt>';
   });
-  let wi = 0;
-  restoredGpxText = restoredGpxText.replace(wptRe, (full, attrs, inner) => {
-    const w = waypoints[wi++];
-    if (!w || !w.hadEle) return full;
-    return '<wpt' + attrs + '>' +
-      inner.replace(/<ele>[^<]*<\/ele>/, '<ele>' + w.eleStr + '</ele>') + '</wpt>';
+  let wptMarkerPlaced = false;
+  restoredGpxText = restoredGpxText.replace(wptRe, () => {
+    if (wptMarkerPlaced) return '';
+    wptMarkerPlaced = true;
+    return '<!--WPT_MARKER-->';
   });
 
   return { restoredCount, osmCount, mismatches };
@@ -1269,15 +1673,64 @@ function escapeHtml(s) {
 
 function renderWaypoints() {
   if (!waypoints.length) { wptWrap.style.display = 'none'; return; }
-  wptList.innerHTML = waypoints.map(w => `
-    <div class="wpt-row">
-      <div class="wpt-ico">${wptIcon(w.typeAttr)}</div>
-      <div class="wpt-name">${escapeHtml(decodeXml(w.nameRaw))}<small>${escapeHtml(w.typeAttr)}</small></div>
-      <div class="wpt-km">${fmtNum(w.km, 1)} km</div>
-      <div class="wpt-ele">${fmtNum(Math.round(w.ele))} m</div>
-    </div>`).join('');
+  wptList.innerHTML = waypoints.map((w, i) => {
+    if (editingWptIdx === i) {
+      const plainName = decodeXml(w.nameRaw);
+      const optionsHtml = WPT_TYPE_OPTIONS.map(o =>
+        `<option value="${o.value}"${o.value.toLowerCase() === (w.typeAttr || '').toLowerCase() ? ' selected' : ''}>${o.label}</option>`
+      ).join('');
+      return `
+        <div class="wpt-row wpt-editing" data-idx="${i}">
+          <select class="wpt-edit-type">${optionsHtml}</select>
+          <input type="text" class="wpt-edit-name" value="${escapeAttr(plainName)}" autocomplete="off">
+          <button type="button" class="wpt-save-btn" data-idx="${i}" title="저장">✓</button>
+          <button type="button" class="wpt-cancel-btn" data-idx="${i}" title="취소">✕</button>
+        </div>`;
+    }
+    return `
+      <div class="wpt-row" data-idx="${i}">
+        <div class="wpt-ico">${wptIcon(w.typeAttr)}</div>
+        <div class="wpt-name">${escapeHtml(decodeXml(w.nameRaw))}<small>${wptTypeLabel(w.typeAttr)}</small></div>
+        <div class="wpt-km">${fmtNum(w.km, 1)} km</div>
+        <div class="wpt-ele">${fmtNum(Math.round(w.ele))} m</div>
+        <div class="wpt-actions">
+          <button type="button" class="wpt-edit-btn" data-idx="${i}" title="편집">✏️</button>
+          <button type="button" class="wpt-del-btn" data-idx="${i}" title="삭제">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
   wptWrap.style.display = 'block';
 }
+
+// 목록이 매번 innerHTML로 다시 그려지므로, 컨테이너에 한 번만 이벤트 위임 등록
+wptList.addEventListener('click', e => {
+  const editBtn   = e.target.closest('.wpt-edit-btn');
+  const delBtn    = e.target.closest('.wpt-del-btn');
+  const saveBtn   = e.target.closest('.wpt-save-btn');
+  const cancelBtn = e.target.closest('.wpt-cancel-btn');
+
+  if (editBtn) {
+    editingWptIdx = parseInt(editBtn.dataset.idx);
+    renderWaypoints();
+  } else if (delBtn) {
+    const idx = parseInt(delBtn.dataset.idx);
+    waypoints.splice(idx, 1);
+    if (editingWptIdx === idx) editingWptIdx = null;
+    renderWaypoints();
+  } else if (saveBtn) {
+    const idx = parseInt(saveBtn.dataset.idx);
+    const row = saveBtn.closest('.wpt-row');
+    const newName = row.querySelector('.wpt-edit-name').value.trim();
+    const newType = row.querySelector('.wpt-edit-type').value;
+    if (newName) waypoints[idx].nameRaw = escapeHtml(newName);
+    waypoints[idx].typeAttr = newType;
+    editingWptIdx = null;
+    renderWaypoints();
+  } else if (cancelBtn) {
+    editingWptIdx = null;
+    renderWaypoints();
+  }
+});
 
 function drawChart() {
   const canvas = document.getElementById('elevChart');
@@ -1372,7 +1825,21 @@ function applyCourseNameToGpx(text, name) {
     out = out.replace(/<trk>/, '<trk><name>' + esc + '</name>');
   }
 
+  // 웨이포인트 마커 → 현재 상태(편집/삭제 반영)로 재조립
+  const wptXml = waypoints.map(buildWptXml).join('\n');
+  out = out.replace('<!--WPT_MARKER-->', wptXml);
+
   return out;
+}
+
+function buildWptXml(w) {
+  const typeAttr = w.typeAttr || 'Generic';
+  return '<wpt lat="' + w.latStr + '" lon="' + w.lonStr + '" sectionIndex="' + w.secIdx + '" pointIndex="' + (w.ptIdx !== undefined ? w.ptIdx : w.arrIdx) + '" type="' + typeAttr + '">'
+    + '<name>' + w.nameRaw + '</name>'
+    + (w.hadEle ? '<ele>' + w.eleStr + '</ele>' : '')
+    + '<type>' + typeAttr.toUpperCase() + '</type>'
+    + '<note>' + w.noteRaw + '</note>'
+    + '</wpt>';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1385,13 +1852,7 @@ function buildGpx(name) {
   out += '<metadata>\n<name>' + esc + '</name>\n<extensions><extra>{}</extra></extensions>\n</metadata>\n';
 
   for (const w of waypoints) {
-    const typeAttr = w.typeAttr || 'Generic';
-    out += '<wpt lat="' + w.latStr + '" lon="' + w.lonStr + '" sectionIndex="' + w.secIdx + '" pointIndex="' + (w.ptIdx !== undefined ? w.ptIdx : w.arrIdx) + '" type="' + typeAttr + '">'
-        + '<name>' + w.nameRaw + '</name>'
-        + '<ele>' + w.eleStr + '</ele>'
-        + '<type>' + typeAttr.toUpperCase() + '</type>'
-        + '<note>' + w.noteRaw + '</note>'
-        + '</wpt>\n';
+    out += buildWptXml(w) + '\n';
   }
 
   out += '<trk>\n<name>' + esc + '</name>\n<trkseg>\n';
