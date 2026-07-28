@@ -62,6 +62,15 @@
   }
   main { flex: 1; }
 
+  #stickyHeader {
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    background: var(--bg);
+    padding-bottom: 10px;
+    margin-bottom: 8px;
+  }
+
   /* ── Header ── */
   .top-row {
     display: flex;
@@ -151,7 +160,7 @@
 
   /* ── Strava correction tab ── */
   #stravaOptionsBar {
-    display:flex;
+    display:none;
     align-items:center;
     flex-wrap:wrap;
     gap:10px;
@@ -728,6 +737,116 @@
     border-radius:var(--radius);
     padding:22px 20px 16px;
   }
+  #s1ChartWrap {
+    display:none;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:22px 20px 16px;
+    margin-bottom:18px;
+  }
+
+  #s1ControlBar {
+    display:none;
+    align-items:center;
+    gap:10px;
+    margin-bottom:18px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 16px;
+    font-size:.82rem;
+  }
+  #s1ControlBar label { color:var(--dim); white-space:nowrap; }
+  #s1ControlBar input[type="range"] { flex:1; }
+  #s1ControlBar span { color:var(--text); font-weight:700; white-space:nowrap; }
+
+  #s1DownloadBar { display:none; gap:12px; margin-bottom:20px; }
+
+  .wpt-head-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 4px; }
+  .wpt-head-row h2 { margin-bottom:0 !important; }
+  #s1ClimbBtn {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--accent);
+    font-weight:700;
+    font-size:.78rem;
+    padding:7px 12px;
+    cursor:pointer;
+    font-family:inherit;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+
+  #s1ClimbModalOverlay {
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.6);
+    z-index:500;
+    align-items:flex-end;
+    justify-content:center;
+    padding:0;
+  }
+  #s1ClimbModalOverlay.open { display:flex; }
+  #s1ClimbModal {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px 16px 0 0;
+    padding:20px;
+    width:100%;
+    max-width:600px;
+    max-height:80vh;
+    overflow-y:auto;
+  }
+  #s1ClimbModal h2 { font-size:1rem; margin-bottom:14px; }
+  .climb-item {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:8px;
+  }
+  .climb-item .info { font-size:.82rem; line-height:1.5; }
+  .climb-item .info b { color:var(--accent); }
+  .climb-item .cat {
+    display:inline-block;
+    font-size:.68rem;
+    font-weight:800;
+    padding:2px 7px;
+    border-radius:5px;
+    margin-left:6px;
+  }
+  .climb-item button {
+    flex-shrink:0;
+    background:linear-gradient(135deg, #123a5c, #0e4e6e);
+    border:1px solid #2a6a95;
+    border-radius:8px;
+    color:#e8f4fc;
+    font-size:.78rem;
+    font-weight:700;
+    padding:8px 12px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .climb-item button:disabled { opacity:.5; cursor:default; }
+  #s1ClimbCloseBtn {
+    width:100%;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:10px;
+    color:var(--dim);
+    font-weight:700;
+    padding:12px;
+    cursor:pointer;
+    font-family:inherit;
+    margin-top:6px;
+  }
 
   /* ── Error ── */
   #errorMsg {
@@ -768,10 +887,11 @@
 <body>
 <main>
 
+<div id="stickyHeader">
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v2.1</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.0</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -786,6 +906,7 @@
   <button class="tab-btn active" data-tab="strava" id="tabBtnStrava" data-i18n="tab1Name">① 스트라바 보정</button>
   <button class="tab-btn" data-tab="restore" id="tabBtnRestore" data-i18n="tab2Name">② 원본고도 복원</button>
 </div>
+</div><!-- /stickyHeader -->
 
 <!-- 탭: 스트라바 보정 -->
 <div id="tabPanelStrava" class="tab-panel">
@@ -794,10 +915,10 @@
     <h2 data-i18n="guideTitle">사용 방법</h2>
     <p class="guide-bg" data-i18n="s1GuideBg">GPX 파일의 고도 정보를 스트라바 기반의 고도 정보로 보정합니다. 실제 사용자들이 기록한 데이터를 기반으로 하기 때문에, 위성 지도 근사값보다 정확한 경우가 많습니다.</p>
     <ol>
-      <li data-i18n="s1Step1">고도를 보정하고 싶은 GPX 파일 업로드</li>
-      <li data-i18n="s1Step2">현재 고도·웨이포인트 확인, 필요하면 이름/유형 수정 또는 삭제</li>
-      <li data-i18n="s1Step3">코스 이름 지정, 내보낼 형식 선택 후 보정 시작</li>
-      <li data-i18n="s1Step4">"X m → Y m로 보정됨" 결과 확인</li>
+      <li data-i18n="s1Step1">고도를 보정하고 싶은 GPX/TCX 파일 업로드</li>
+      <li data-i18n="s1Step2">현재 고도·웨이포인트 확인, 필요하면 이름/유형 수정·삭제나 오르막 자동 감지</li>
+      <li data-i18n="s1Step3">보정 시작 클릭</li>
+      <li data-i18n="s1Step4">결과 확인 후 코스 이름·내보낼 형식 지정</li>
       <li data-i18n="s1Step5">GPX 또는 TCX 다운로드</li>
     </ol>
     <p class="guide-warn" data-i18n="s1GuideWarn">⚠️ 이 결과를 라이딩가즈아에서 다시 만지면 고도가 또 뭉개집니다. 그럴 계획이면 그 이후엔 ② 탭으로 오세요.</p>
@@ -810,9 +931,9 @@
     <svg class="mountain" viewBox="0 0 200 80" width="200" height="80" fill="none" xmlns="http://www.w3.org/2000/svg">
       <polyline points="0,80 40,20 70,45 100,5 130,35 160,18 200,80" stroke="#38bdf8" stroke-width="2" fill="rgba(56,189,248,0.08)"/>
     </svg>
-    <div class="upload-title" data-i18n="s1UploadTitle">GPX 파일을 드래그하거나 클릭해서 업로드</div>
+    <div class="upload-title" data-i18n="s1UploadTitle">GPX/TCX 파일을 드래그하거나 클릭해서 업로드</div>
     <div class="upload-hint" data-i18n="s1UploadHint">시간 정보가 없는 경로 파일도 자동으로 채워서 처리합니다</div>
-    <input type="file" id="stravaFileInput" accept=".gpx">
+    <input type="file" id="stravaFileInput" accept=".gpx,.tcx">
   </div>
 
   <div id="stravaFileBadge">
@@ -849,18 +970,24 @@
   </div>
 
   <div id="s1WptWrap">
-    <h2 data-i18n="wptTitle">웨이포인트</h2>
+    <div class="wpt-head-row">
+      <h2 data-i18n="wptTitle">웨이포인트</h2>
+      <button type="button" id="s1ClimbBtn" data-i18n="climbDetectBtn">⛰️ 오르막 자동 감지</button>
+    </div>
     <div id="s1WptList"></div>
   </div>
 
-  <div id="stravaOptionsBar">
-    <label for="stravaCourseName" data-i18n="courseNameLabel">코스 이름</label>
-    <input type="text" id="stravaCourseName" autocomplete="off" spellcheck="false">
-    <label for="stravaFormatSelect" data-i18n="s1FormatLabel">내보낼 형식</label>
-    <select id="stravaFormatSelect">
-      <option value="gpx">GPX</option>
-      <option value="tcx">TCX</option>
-    </select>
+  <!-- 노이즈 필터 -->
+  <div id="s1ControlBar">
+    <label for="s1Thresh" data-i18n="noiseLabel">노이즈 필터 (참고용)</label>
+    <input type="range" id="s1Thresh" min="0" max="15" step="1" value="0">
+    <span id="s1ThreshVal">0 m</span>
+  </div>
+
+  <!-- 고도 프로파일 차트 -->
+  <div id="s1ChartWrap">
+    <h2 data-i18n="s1ChartTitle">고도 프로파일</h2>
+    <canvas id="s1ElevChart"></canvas>
   </div>
 
   <button id="stravaRunBtn"><span class="ico">▶</span><span data-i18n="s1RunBtn">보정 시작</span></button>
@@ -872,7 +999,38 @@
 
   <div id="stravaResult">
     <p id="stravaResultText"></p>
-    <button type="button" id="stravaDownloadBtn"><span class="ico">⬇️</span><span data-i18n="s1DownloadBtn">다운로드</span></button>
+  </div>
+
+  <div id="stravaOptionsBar">
+    <label for="stravaCourseName" data-i18n="courseNameLabel">코스 이름</label>
+    <input type="text" id="stravaCourseName" autocomplete="off" spellcheck="false">
+    <label for="paramInputS1" data-i18n="paramLabel">매개변수</label>
+    <input type="text" id="paramInputS1" autocomplete="off" spellcheck="false">
+    <label for="stravaFormatSelect" data-i18n="s1FormatLabel">내보낼 형식</label>
+    <select id="stravaFormatSelect">
+      <option value="gpx">GPX</option>
+      <option value="tcx">TCX</option>
+    </select>
+  </div>
+
+  <div id="s1DownloadBar">
+    <button type="button" class="export-btn" id="stravaDownloadBtn">
+      <span class="ico">⬇️</span>
+      <span class="txt"><span data-i18n="s1DownloadBtn">다운로드</span></span>
+    </button>
+    <button type="button" class="export-btn" id="s1BtnCsv">
+      <span class="ico">📊</span>
+      <span class="txt"><span data-i18n="exportCsv">웨이포인트 CSV</span></span>
+    </button>
+  </div>
+
+  <!-- 오르막 감지 결과 팝업 -->
+  <div id="s1ClimbModalOverlay">
+    <div id="s1ClimbModal">
+      <h2 data-i18n="climbModalTitle">감지된 오르막</h2>
+      <div id="s1ClimbList"></div>
+      <button type="button" id="s1ClimbCloseBtn" data-i18n="climbModalClose">닫기</button>
+    </div>
   </div>
 
 </div>
@@ -883,7 +1041,7 @@
 <!-- 사용법 안내 -->
 <div id="guideBox">
   <h2 data-i18n="guideTitle">사용 방법</h2>
-  <p class="guide-bg" data-i18n="guideBg">라이딩가즈아는 GPX 파일을 가져오는 즉시 고도를 자동으로 재샘플링합니다. 다만 그 직전 값을 파일 안에 몰래 남겨두는데, 이 탭은 그 백업값을 즉시 그대로 꺼내옵니다 — 스트라바를 다시 거치지 않아서 훨씬 빠릅니다.</p>
+  <p class="guide-bg" data-i18n="guideBg">라이딩가즈아에서 웨이포인트 작업을 마친 파일의 고도를 빠르게 원래대로 복원합니다 — 스트라바를 다시 거치지 않아서 훨씬 빠릅니다.</p>
   <p class="guide-bg" data-i18n="guideBg2">① 탭으로 이미 보정한 파일을 라이딩가즈아에서 다시 편집했다면, 정확히 이 상황이라 ①을 또 돌릴 필요 없이 여기서 바로 복구됩니다.</p>
   <ol>
     <li data-i18n="guideStep1">라이딩가즈아에서 웨이포인트 작업까지 마친 GPX/TCX 업로드</li>
@@ -1015,7 +1173,7 @@
 
 </main>
 
-<footer id="footerText">v2.1 (2026.07.24) · Made by 오동도</footer>
+<footer id="footerText">v3.0 (2026.07.28) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1028,18 +1186,18 @@ const I18N = {
     uploadTitle:'GPX/TCX 파일을 드래그하거나 클릭해서 업로드',
     uploadHint:'파일은 브라우저에서만 처리되며 서버로 전송되지 않습니다',
     guideTitle:'사용 방법',
-    guideBg:'라이딩가즈아는 GPX 파일을 가져오는 즉시 고도를 자동으로 재샘플링합니다. 다만 그 직전 값을 파일 안에 몰래 남겨두는데, 이 탭은 그 백업값을 즉시 그대로 꺼내옵니다 — 스트라바를 다시 거치지 않아서 훨씬 빠릅니다.',
+    guideBg:'라이딩가즈아에서 웨이포인트 작업을 마친 파일의 고도를 빠르게 원래대로 복원합니다 — 스트라바를 다시 거치지 않아서 훨씬 빠릅니다.',
     guideBg2:'① 탭으로 이미 보정한 파일을 라이딩가즈아에서 다시 편집했다면, 정확히 이 상황이라 ①을 또 돌릴 필요 없이 여기서 바로 복구됩니다.',
     tab1Name:'① 스트라바 보정',
     tab2Name:'② 원본고도 복원',
     s1GuideBg:'GPX 파일의 고도 정보를 스트라바 기반의 고도 정보로 보정합니다. 실제 사용자들이 기록한 데이터를 기반으로 하기 때문에, 위성 지도 근사값보다 정확한 경우가 많습니다.',
-    s1Step1:'고도를 보정하고 싶은 GPX 파일 업로드',
-    s1Step2:'현재 고도·웨이포인트 확인, 필요하면 이름/유형 수정 또는 삭제',
-    s1Step3:'코스 이름 지정, 내보낼 형식 선택 후 보정 시작',
-    s1Step4:'"X m → Y m로 보정됨" 결과 확인',
+    s1Step1:'고도를 보정하고 싶은 GPX/TCX 파일 업로드',
+    s1Step2:'현재 고도·웨이포인트 확인, 필요하면 이름/유형 수정·삭제나 오르막 자동 감지',
+    s1Step3:'보정 시작 클릭',
+    s1Step4:'결과 확인 후 코스 이름·내보낼 형식 지정',
     s1Step5:'GPX 또는 TCX 다운로드',
     s1GuideWarn:'⚠️ 이 결과를 라이딩가즈아에서 다시 만지면 고도가 또 뭉개집니다. 그럴 계획이면 그 이후엔 ② 탭으로 오세요.',
-    s1UploadTitle:'GPX 파일을 드래그하거나 클릭해서 업로드',
+    s1UploadTitle:'GPX/TCX 파일을 드래그하거나 클릭해서 업로드',
     s1UploadHint:'시간 정보가 없는 경로 파일도 자동으로 채워서 처리합니다',
     s1FormatLabel:'내보낼 형식',
     s1RunBtn:'보정 시작',
@@ -1073,6 +1231,13 @@ const I18N = {
     ridingazuaLabel:'라이딩가즈아',
     authorName:'오동도',
     wptTitle:'웨이포인트',
+    s1ChartTitle:'고도 프로파일',
+    climbDetectBtn:'⛰️ 오르막 자동 감지',
+    climbModalTitle:'감지된 오르막',
+    climbModalClose:'닫기',
+    climbNone:'감지된 오르막이 없습니다 (500m 이상, 평균 경사도 3% 이상 기준)',
+    climbCreateBtn:'웨이포인트 생성',
+    climbCreated:'생성됨',
     chartTitle:'고도 프로파일 (복원된 원본 고도)',
     ttDist:'거리', ttEle:'고도',
     msgRestored:'🔧 원본 고도 <span class="ok">{n}개 복원</span>',
@@ -1093,18 +1258,18 @@ const I18N = {
     uploadTitle:'Drag & drop a GPX or TCX file, or click to upload',
     uploadHint:'Processed entirely in your browser — nothing is sent to a server',
     guideTitle:'How to use',
-    guideBg:"ridingazua automatically resamples elevation the instant you import a GPX file. But it quietly keeps the value from right before that inside the file — this tab pulls that backup straight out, without going through Strava again, so it's much faster.",
+    guideBg:"Quickly restores the elevation of a file you've finished waypoint work on in ridingazua — much faster since it doesn't go through Strava again.",
     guideBg2:"If you edited a file that ① already corrected, back in ridingazua, this is exactly that situation — no need to run ① again, just restore it here directly.",
     tab1Name:'① Strava Correction',
     tab2Name:'② Restore Original Elevation',
     s1GuideBg:"Corrects a GPX file's elevation using Strava-based elevation data. Since it's based on data actually recorded by real users, it's often more accurate than satellite map estimates.",
-    s1Step1:'Upload the GPX file whose elevation you want corrected',
-    s1Step2:'Check current elevation and waypoints; edit names/types or delete if needed',
-    s1Step3:'Set a course name, choose the export format, then run correction',
-    s1Step4:'Check the "X m → Y m" result',
+    s1Step1:'Upload the GPX/TCX file whose elevation you want corrected',
+    s1Step2:'Check current elevation and waypoints; edit names/types, delete, or auto-detect climbs',
+    s1Step3:'Click Run Correction',
+    s1Step4:'After the result, set a course name and export format',
     s1Step5:'Download the GPX or TCX',
     s1GuideWarn:"⚠️ If you touch this result again in ridingazua, elevation gets mangled again. If that's the plan, come back to tab ② afterward.",
-    s1UploadTitle:'Drag & drop a GPX file, or click to upload',
+    s1UploadTitle:'Drag & drop a GPX/TCX file, or click to upload',
     s1UploadHint:'Route files with no time data are handled automatically',
     s1FormatLabel:'Export format',
     s1RunBtn:'Run Correction',
@@ -1138,6 +1303,13 @@ const I18N = {
     ridingazuaLabel:'ridingazua',
     authorName:'Odongdo',
     wptTitle:'Waypoints',
+    s1ChartTitle:'Elevation Profile',
+    climbDetectBtn:'⛰️ Auto-detect Climbs',
+    climbModalTitle:'Detected Climbs',
+    climbModalClose:'Close',
+    climbNone:'No climbs detected (500m+ length, 3%+ average grade)',
+    climbCreateBtn:'Create Waypoint',
+    climbCreated:'Created',
     chartTitle:'Elevation Profile (restored original elevation)',
     ttDist:'Distance', ttEle:'Elevation',
     msgRestored:'🔧 Restored <span class="ok">{n} original elevations</span>',
@@ -1158,18 +1330,18 @@ const I18N = {
     uploadTitle:'GPXまたはTCXファイルをドラッグ、またはクリックしてアップロード',
     uploadHint:'ファイルはブラウザ内でのみ処理され、サーバーには送信されません',
     guideTitle:'使い方',
-    guideBg:'ridingazuaはGPXファイルを取り込んだ瞬間に、標高を自動的に再サンプリングします。ただしその直前の値をファイル内にこっそり残しており、このタブはそのバックアップ値をそのまま取り出します — Stravaを再度経由しないので、はるかに高速です。',
+    guideBg:'ridingazuaでウェイポイント作業を終えたファイルの標高を素早く元通りに復元します — Stravaを再度経由しないので、はるかに高速です。',
     guideBg2:'① タブですでに補正したファイルをridingazuaで再度編集した場合、まさにこの状況なので①をもう一度実行する必要はなく、ここで直接復元できます。',
     tab1Name:'① Strava補正',
     tab2Name:'② 元の標高を復元',
     s1GuideBg:'GPXファイルの標高情報をStravaベースの標高情報に補正します。実際のユーザーが記録したデータを基にしているため、衛星地図の推定値より正確な場合が多いです。',
-    s1Step1:'標高を補正したいGPXファイルをアップロード',
-    s1Step2:'現在の標高・ウェイポイントを確認、必要なら名前/種類を修正または削除',
-    s1Step3:'コース名を指定し、書き出し形式を選んで補正開始',
-    s1Step4:'"X m → Y mに補正されました"の結果を確認',
+    s1Step1:'標高を補正したいGPX/TCXファイルをアップロード',
+    s1Step2:'現在の標高・ウェイポイントを確認、必要なら名前/種類の修正・削除や上り坂の自動検出',
+    s1Step3:'補正開始をクリック',
+    s1Step4:'結果確認後にコース名・書き出し形式を指定',
     s1Step5:'GPXまたはTCXをダウンロード',
     s1GuideWarn:'⚠️ この結果をridingazuaで再度編集すると標高がまた崩れます。その予定なら、その後は②タブへどうぞ。',
-    s1UploadTitle:'GPXファイルをドラッグ、またはクリックしてアップロード',
+    s1UploadTitle:'GPX/TCXファイルをドラッグ、またはクリックしてアップロード',
     s1UploadHint:'時刻情報のない経路ファイルも自動的に補って処理します',
     s1FormatLabel:'書き出し形式',
     s1RunBtn:'補正開始',
@@ -1202,6 +1374,13 @@ const I18N = {
     infoClose:'閉じる',
     ridingazuaLabel:'ridingazua',
     wptTitle:'ウェイポイント',
+    s1ChartTitle:'標高プロファイル',
+    climbDetectBtn:'⛰️ 上り坂自動検出',
+    climbModalTitle:'検出された上り坂',
+    climbModalClose:'閉じる',
+    climbNone:'検出された上り坂はありません(500m以上、平均勾配3%以上基準)',
+    climbCreateBtn:'ウェイポイント作成',
+    climbCreated:'作成済み',
     authorName:'Odongdo',
     chartTitle:'標高プロファイル (復元された元の標高)',
     ttDist:'距離', ttEle:'標高',
@@ -1234,7 +1413,7 @@ function applyLang() {
 }
 function renderFooter() {
   document.getElementById('footerText').textContent =
-    'v2.1 (2026.07.24) · Made by ' + t('authorName');
+    'v3.0 (2026.07.28) · Made by ' + t('authorName');
 }
 document.querySelectorAll('.lang-switch button').forEach(b =>
   b.addEventListener('click', () => { lang = b.dataset.lang; applyLang(); }));
@@ -1335,33 +1514,41 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
   const sFileBadge     = document.getElementById('stravaFileBadge');
   const sFileName      = document.getElementById('stravaFileName');
   const sCourseName    = document.getElementById('stravaCourseName');
+  const s1Param        = document.getElementById('paramInputS1');
   const sFormatSelect  = document.getElementById('stravaFormatSelect');
+  const sOptionsBar    = document.getElementById('stravaOptionsBar');
   const sRunBtn        = document.getElementById('stravaRunBtn');
   const sProgress      = document.getElementById('stravaProgress');
   const sProgressText  = document.getElementById('stravaProgressText');
   const sResult        = document.getElementById('stravaResult');
   const sResultText    = document.getElementById('stravaResultText');
   const sDownloadBtn   = document.getElementById('stravaDownloadBtn');
+  const sDownloadBar   = document.getElementById('s1DownloadBar');
+  const s1CsvBtn       = document.getElementById('s1BtnCsv');
   const s1WptList      = document.getElementById('s1WptList');
   const s1WptWrap      = document.getElementById('s1WptWrap');
   const s1StatsGrid    = document.getElementById('s1StatsGrid');
+  const s1ControlBar   = document.getElementById('s1ControlBar');
+  const s1Thresh       = document.getElementById('s1Thresh');
+  const s1ThreshVal    = document.getElementById('s1ThreshVal');
+  const s1ChartWrap    = document.getElementById('s1ChartWrap');
+  const s1ClimbBtn     = document.getElementById('s1ClimbBtn');
+  const s1ClimbOverlay = document.getElementById('s1ClimbModalOverlay');
+  const s1ClimbList    = document.getElementById('s1ClimbList');
+  const s1ClimbCloseBtn= document.getElementById('s1ClimbCloseBtn');
 
   let pendingFile = null;
-  let resultData  = null; // { content, filename, format }
   let s1Points = [], s1Waypoints = [], s1CumDist = [];
   let s1EditingWptIdx = null;
+  let s1Chart = null;
+  let s1Corrected = false; // 보정 완료 여부 (다운로드 가능 여부 판단)
+  let s1EasterEgg = false; // 매개변수에 "오동도짱" 입력 시 5개 값 표 형태
 
-  function backendUrl() {
-    return STRAVA_BACKEND_URL.replace(/\/+$/, '');
-  }
-
-  function showSError(msg) {
-    sErrorMsg.textContent = '⚠️ ' + msg;
-    sErrorMsg.style.display = 'block';
-  }
+  function backendUrl() { return STRAVA_BACKEND_URL.replace(/\/+$/, ''); }
+  function showSError(msg) { sErrorMsg.textContent = '⚠️ ' + msg; sErrorMsg.style.display = 'block'; }
   function hideSError() { sErrorMsg.style.display = 'none'; }
 
-  // ── 범용 GPX 파싱 (라이딩가즈아 전용 아님 - 어디서 만든 GPX든 허용) ──
+  // ── 파싱: GPX/TCX 둘 다 지원 (라이딩가즈아 전용 아님) ──
   function s1ParseGpx(text) {
     const points = [];
     const trkptRe = /<trkpt\b([^>]*)>([\s\S]*?)<\/trkpt>/g;
@@ -1389,12 +1576,38 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
     return { points, waypoints };
   }
 
+  function s1ParseTcx(text) {
+    const points = [];
+    const tpRe = /<Trackpoint\b[^>]*>([\s\S]*?)<\/Trackpoint>/g;
+    let m;
+    while ((m = tpRe.exec(text)) !== null) {
+      const inner = m[1];
+      const latM = inner.match(/<LatitudeDegrees>([^<]*)<\/LatitudeDegrees>/);
+      const lonM = inner.match(/<LongitudeDegrees>([^<]*)<\/LongitudeDegrees>/);
+      const eleM = inner.match(/<AltitudeMeters>([^<]*)<\/AltitudeMeters>/);
+      const timeM = inner.match(/<Time>([^<]*)<\/Time>/);
+      if (!latM || !lonM) continue;
+      points.push({ lat: parseFloat(latM[1]), lon: parseFloat(lonM[1]), ele: eleM ? parseFloat(eleM[1]) : 0, time: timeM ? timeM[1].trim() : null });
+    }
+    const waypoints = [];
+    const cpRe = /<CoursePoint\b[^>]*>([\s\S]*?)<\/CoursePoint>/g;
+    while ((m = cpRe.exec(text)) !== null) {
+      const inner = m[1];
+      const latM = inner.match(/<LatitudeDegrees>([^<]*)<\/LatitudeDegrees>/);
+      const lonM = inner.match(/<LongitudeDegrees>([^<]*)<\/LongitudeDegrees>/);
+      const nameM = inner.match(/<Name>([\s\S]*?)<\/Name>/);
+      const typeM = inner.match(/<PointType>([\s\S]*?)<\/PointType>/);
+      if (!latM || !lonM) continue;
+      waypoints.push({ lat: parseFloat(latM[1]), lon: parseFloat(lonM[1]), name: nameM ? decodeXml(nameM[1].trim()) : '', type: typeM ? decodeXml(typeM[1].trim()) : 'Generic' });
+    }
+    return { points, waypoints };
+  }
+
   function s1ComputeCumDist(points) {
     const cum = [0];
     for (let i = 1; i < points.length; i++) cum.push(cum[i - 1] + haversine(points[i - 1], points[i]));
     return cum;
   }
-
   function s1NearestIdx(points, lat, lon) {
     let best = 0, bestD = Infinity;
     for (let i = 0; i < points.length; i++) {
@@ -1403,24 +1616,33 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
     }
     return best;
   }
-
-  function s1CalcStats(points) {
+  function s1CalcStats(points, threshold) {
     let gain = 0, loss = 0;
     let minEle = points[0].ele, maxEle = points[0].ele;
     let baseEle = points[0].ele;
     for (let i = 1; i < points.length; i++) {
       const diff = points[i].ele - baseEle;
-      if (diff > 0) gain += diff; else loss += -diff;
-      baseEle = points[i].ele;
+      if (threshold === 0 ? diff !== 0 : Math.abs(diff) >= threshold) {
+        if (diff > 0) gain += diff; else loss += -diff;
+        baseEle = points[i].ele;
+      }
       if (points[i].ele < minEle) minEle = points[i].ele;
       if (points[i].ele > maxEle) maxEle = points[i].ele;
     }
     return { gain, loss, minEle, maxEle };
   }
+  function s1CalcSegmentGainLoss(fromIdx, toIdx) {
+    let gain = 0, loss = 0;
+    for (let i = fromIdx + 1; i <= toIdx; i++) {
+      const diff = s1Points[i].ele - s1Points[i - 1].ele;
+      if (diff > 0) gain += diff; else loss += -diff;
+    }
+    return { gain, loss };
+  }
 
-  function s1RenderStats() {
+  function s1RenderStats(threshold) {
     const totalDist = s1CumDist[s1CumDist.length - 1] || 0;
-    const s = s1CalcStats(s1Points);
+    const s = s1CalcStats(s1Points, threshold || 0);
     document.getElementById('s1StatDist').textContent = totalDist >= 1000 ? fmtNum(totalDist / 1000, 2) + ' km' : fmtNum(Math.round(totalDist)) + ' m';
     document.getElementById('s1StatGain').textContent = fmtNum(Math.round(s.gain)) + ' m';
     document.getElementById('s1StatLoss').textContent = fmtNum(Math.round(s.loss)) + ' m';
@@ -1432,19 +1654,39 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
 
   function s1RenderWaypoints() {
     if (!s1Waypoints.length) { s1WptWrap.style.display = 'none'; return; }
-    s1WptList.innerHTML = s1Waypoints.map((w, i) => {
-      if (s1EditingWptIdx === i) {
-        const optionsHtml = WPT_TYPE_OPTIONS.map(o =>
-          `<option value="${o.value}"${o.value.toLowerCase() === (w.type || '').toLowerCase() ? ' selected' : ''}>${o.label}</option>`
-        ).join('');
+
+    if (s1EasterEgg) {
+      let prevKm = 0, prevArrIdx = 0;
+      const rowsHtml = s1Waypoints.map((w, i) => {
+        if (s1EditingWptIdx === i) { prevKm = w.km; prevArrIdx = w.arrIdx; return s1EditRowHtml(w, i); }
+        const seg = s1CalcSegmentGainLoss(prevArrIdx, w.arrIdx);
+        const segKm = w.km - prevKm;
+        prevKm = w.km; prevArrIdx = w.arrIdx;
         return `
-          <div class="wpt-row wpt-editing" data-idx="${i}">
-            <select class="wpt-edit-type">${optionsHtml}</select>
-            <input type="text" class="wpt-edit-name" value="${escapeAttr(w.name)}" autocomplete="off">
-            <button type="button" class="wpt-save-btn" data-idx="${i}" title="저장">✓</button>
-            <button type="button" class="wpt-cancel-btn" data-idx="${i}" title="취소">✕</button>
+          <div class="wpt-row wpt-table" data-idx="${i}">
+            <div class="wpt-ico">${wptIcon(w.type)}</div>
+            <div class="wpt-name">${escapeHtml(w.name)}<small>${wptTypeLabel(w.type)}</small></div>
+            <div class="wpt-num">${fmtNum(segKm, 1)}km</div>
+            <div class="wpt-num">${fmtNum(w.km, 1)}km</div>
+            <div class="wpt-num">${fmtNum(Math.round(w.ele))}m</div>
+            <div class="wpt-ele-pair"><span class="g">↑${fmtNum(Math.round(seg.gain))}</span><span class="l">↓${fmtNum(Math.round(seg.loss))}</span></div>
+            <div class="wpt-actions">
+              <button type="button" class="wpt-edit-btn" data-idx="${i}" title="편집">✏️</button>
+              <button type="button" class="wpt-del-btn" data-idx="${i}" title="삭제">🗑️</button>
+            </div>
           </div>`;
-      }
+      }).join('');
+      s1WptList.innerHTML = `
+        <div class="wpt-legend">
+          <span></span><span data-i18n="wptColName">이름</span><span data-i18n="wptColSeg">구간</span><span data-i18n="wptColCum">누적</span><span data-i18n="wptColEle">해발</span><span data-i18n="wptColUpDown">구간±</span><span></span>
+        </div>` + rowsHtml;
+      applyLangToElement(s1WptList);
+      s1WptWrap.style.display = 'block';
+      return;
+    }
+
+    s1WptList.innerHTML = s1Waypoints.map((w, i) => {
+      if (s1EditingWptIdx === i) return s1EditRowHtml(w, i);
       return `
         <div class="wpt-row" data-idx="${i}">
           <div class="wpt-ico">${wptIcon(w.type)}</div>
@@ -1460,16 +1702,24 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
     s1WptWrap.style.display = 'block';
   }
 
-  s1WptList.addEventListener('click', e => {
-    const editBtn   = e.target.closest('.wpt-edit-btn');
-    const delBtn    = e.target.closest('.wpt-del-btn');
-    const saveBtn   = e.target.closest('.wpt-save-btn');
-    const cancelBtn = e.target.closest('.wpt-cancel-btn');
+  function s1EditRowHtml(w, i) {
+    const optionsHtml = WPT_TYPE_OPTIONS.map(o =>
+      `<option value="${o.value}"${o.value.toLowerCase() === (w.type || '').toLowerCase() ? ' selected' : ''}>${o.label}</option>`
+    ).join('');
+    return `
+      <div class="wpt-row wpt-editing" data-idx="${i}">
+        <select class="wpt-edit-type">${optionsHtml}</select>
+        <input type="text" class="wpt-edit-name" value="${escapeAttr(w.name)}" autocomplete="off">
+        <button type="button" class="wpt-save-btn" data-idx="${i}" title="저장">✓</button>
+        <button type="button" class="wpt-cancel-btn" data-idx="${i}" title="취소">✕</button>
+      </div>`;
+  }
 
-    if (editBtn) {
-      s1EditingWptIdx = parseInt(editBtn.dataset.idx);
-      s1RenderWaypoints();
-    } else if (delBtn) {
+  s1WptList.addEventListener('click', e => {
+    const editBtn = e.target.closest('.wpt-edit-btn'), delBtn = e.target.closest('.wpt-del-btn');
+    const saveBtn = e.target.closest('.wpt-save-btn'), cancelBtn = e.target.closest('.wpt-cancel-btn');
+    if (editBtn) { s1EditingWptIdx = parseInt(editBtn.dataset.idx); s1RenderWaypoints(); }
+    else if (delBtn) {
       const idx = parseInt(delBtn.dataset.idx);
       s1Waypoints.splice(idx, 1);
       if (s1EditingWptIdx === idx) s1EditingWptIdx = null;
@@ -1485,13 +1735,150 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
       s1Waypoints[idx].type = newType;
       s1EditingWptIdx = null;
       s1RenderWaypoints();
-    } else if (cancelBtn) {
-      s1EditingWptIdx = null;
-      s1RenderWaypoints();
-    }
+    } else if (cancelBtn) { s1EditingWptIdx = null; s1RenderWaypoints(); }
   });
 
-  // 현재 상태(편집 반영)를 GPX로 재조립 - 서버에 보낼 파일
+  // ── 노이즈 필터 ──
+  s1Thresh.addEventListener('input', () => {
+    const v = parseInt(s1Thresh.value);
+    s1ThreshVal.textContent = v + ' m';
+    s1RenderStats(v);
+  });
+
+  // ── 차트 ──
+  function s1DrawChart() {
+    if (typeof Chart === 'undefined') { s1ChartWrap.style.display = 'none'; return; }
+    const MAX = 600;
+    let idxs = s1Points.map((_, i) => i);
+    if (s1Points.length > MAX) {
+      const step = Math.ceil(s1Points.length / MAX);
+      idxs = idxs.filter(i => i % step === 0 || i === s1Points.length - 1);
+    }
+    const totalDist = s1CumDist[s1CumDist.length - 1] || 0;
+    const labels = idxs.map(i => {
+      const d = s1CumDist[i];
+      if (totalDist >= 10000) return (d / 1000).toFixed(1) + ' km';
+      if (totalDist >= 1000) return (d / 1000).toFixed(2) + ' km';
+      return Math.round(d) + ' m';
+    });
+    const data = idxs.map(i => s1Points[i].ele);
+    const ctx = document.getElementById('s1ElevChart').getContext('2d');
+    if (s1Chart) s1Chart.destroy();
+    s1Chart = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{
+        data, borderColor: '#38bdf8', borderWidth: 2, tension: .35, pointRadius: 0, fill: true,
+        backgroundColor: c => {
+          const area = c.chart.chartArea;
+          if (!area) return 'rgba(56,189,248,.15)';
+          const g = c.chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+          g.addColorStop(0, 'rgba(56,189,248,.35)'); g.addColorStop(1, 'rgba(56,189,248,.02)');
+          return g;
+        }
+      }] },
+      options: {
+        responsive: true, animation: { duration: 400 },
+        plugins: {
+          legend: { display: false },
+          tooltip: { mode: 'index', intersect: false, backgroundColor: '#1a2740', borderColor: '#263550', borderWidth: 1, titleColor: '#5a7a9a', bodyColor: '#dde5ef', padding: 10 }
+        },
+        scales: {
+          x: { ticks: { color: '#5a7a9a', maxTicksLimit: 6, font: { size: 10 } }, grid: { color: 'rgba(38,53,80,.4)' } },
+          y: { ticks: { color: '#5a7a9a', font: { size: 10 }, callback: v => v + 'm' }, grid: { color: 'rgba(38,53,80,.4)' } }
+        }
+      }
+    });
+    s1ChartWrap.style.display = 'block';
+  }
+
+  // ── 오르막 자동 감지 (ClimbPro 기준: 500m+, 3%+, 점수 1500+) ──
+  function s1DetectClimbs() {
+    const pts = s1Points, cum = s1CumDist;
+    if (pts.length < 3) return [];
+    const WIN = 5;
+    const smoothed = pts.map((p, i) => {
+      let sum = 0, cnt = 0;
+      for (let j = Math.max(0, i - WIN); j <= Math.min(pts.length - 1, i + WIN); j++) { sum += pts[j].ele; cnt++; }
+      return sum / cnt;
+    });
+    const climbs = [];
+    let i = 0;
+    while (i < smoothed.length - 1) {
+      if (smoothed[i + 1] > smoothed[i]) {
+        let j = i;
+        while (j < smoothed.length - 1) {
+          if (smoothed[j + 1] > smoothed[j]) { j++; continue; }
+          let k = j;
+          while (k < smoothed.length - 1 && smoothed[k + 1] <= smoothed[k] && (cum[k] - cum[j]) < 300) k++;
+          if (k < smoothed.length - 1 && smoothed[k + 1] > smoothed[k]) { j = k; continue; }
+          break;
+        }
+        const startIdx = i, endIdx = j;
+        const lengthM = cum[endIdx] - cum[startIdx];
+        const elevGain = smoothed[endIdx] - smoothed[startIdx];
+        const grade = lengthM > 0 ? (elevGain / lengthM) * 100 : 0;
+        const score = lengthM * grade;
+        if (lengthM >= 500 && grade >= 3 && score >= 1500) {
+          let peakIdx = startIdx;
+          for (let m = startIdx; m <= endIdx; m++) if (pts[m].ele > pts[peakIdx].ele) peakIdx = m;
+          climbs.push({ startIdx, endIdx, peakIdx, startKm: cum[startIdx] / 1000, lengthM, grade, score, peakEle: pts[peakIdx].ele });
+        }
+        i = endIdx + 1;
+      } else i++;
+    }
+    return climbs;
+  }
+  function s1ClimbCategory(score) {
+    if (score > 64000) return { label: 'HC', color: '#7c2d12' };
+    if (score > 48000) return { label: 'Cat 1', color: '#dc2626' };
+    if (score > 32000) return { label: 'Cat 2', color: '#f97316' };
+    if (score > 16000) return { label: 'Cat 3', color: '#eab308' };
+    if (score > 8000)  return { label: 'Cat 4', color: '#22c55e' };
+    return { label: '-', color: '#5a7a9a' };
+  }
+
+  s1ClimbBtn.addEventListener('click', () => {
+    if (!s1Points.length) return;
+    const climbs = s1DetectClimbs();
+    if (!climbs.length) {
+      s1ClimbList.innerHTML = `<p style="color:var(--dim);font-size:.85rem;">${t('climbNone')}</p>`;
+    } else {
+      s1ClimbList.innerHTML = climbs.map((c, idx) => {
+        const cat = s1ClimbCategory(c.score);
+        return `
+          <div class="climb-item" data-idx="${idx}">
+            <div class="info">
+              ${fmtNum(c.startKm, 1)}km · ${fmtNum(c.lengthM / 1000, 1)}km · ${fmtNum(c.grade, 1)}%
+              <span class="cat" style="background:${cat.color};color:#fff;">${cat.label}</span>
+              <br><b>${Math.round(c.peakEle)}m</b>
+            </div>
+            <button type="button" class="climb-create-btn" data-idx="${idx}">${t('climbCreateBtn')}</button>
+          </div>`;
+      }).join('');
+      s1ClimbList._climbs = climbs;
+    }
+    s1ClimbOverlay.classList.add('open');
+  });
+  s1ClimbCloseBtn.addEventListener('click', () => s1ClimbOverlay.classList.remove('open'));
+  s1ClimbOverlay.addEventListener('click', e => { if (e.target === s1ClimbOverlay) s1ClimbOverlay.classList.remove('open'); });
+  s1ClimbList.addEventListener('click', e => {
+    const btn = e.target.closest('.climb-create-btn');
+    if (!btn) return;
+    const climbs = s1ClimbList._climbs || [];
+    const c = climbs[parseInt(btn.dataset.idx)];
+    if (!c) return;
+    const p = s1Points[c.peakIdx];
+    s1Waypoints.push({
+      lat: p.lat, lon: p.lon, name: Math.round(p.ele) + 'm', type: 'Summit',
+      arrIdx: c.peakIdx, km: s1CumDist[c.peakIdx] / 1000, ele: p.ele
+    });
+    s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
+    s1RenderWaypoints();
+    btn.disabled = true;
+    btn.textContent = t('climbCreated');
+  });
+
+  // ── GPX/TCX 재조립 (편집 반영, 클라이언트 사이드) ──
   function s1BuildGpx(name) {
     const esc = escapeHtml(name);
     let out = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="gpx-restorer-tab1" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>' + esc + '</name></metadata>\n';
@@ -1503,12 +1890,30 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
     }
     out += '<trk><name>' + esc + '</name><trkseg>\n';
     for (const p of s1Points) {
-      out += '<trkpt lat="' + p.lat + '" lon="' + p.lon + '">';
-      out += '<ele>' + p.ele + '</ele>';
+      out += '<trkpt lat="' + p.lat + '" lon="' + p.lon + '"><ele>' + p.ele + '</ele>';
       if (p.time) out += '<time>' + p.time + '</time>';
       out += '</trkpt>\n';
     }
     out += '</trkseg></trk>\n</gpx>';
+    return out;
+  }
+  function s1BuildTcx(name) {
+    const esc = escapeHtml(name);
+    const speedMs = 20 * 1000 / 3600;
+    const startMs = Date.now();
+    let out = '<?xml version="1.0" encoding="utf-8" standalone="no"?>\n<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">\n<Folders />\n<Courses>\n<Course>\n<Name>' + esc + '</Name>\n<Lap>\n';
+    out += '<TotalTimeSeconds>' + Math.round((s1CumDist[s1CumDist.length - 1] || 0) / speedMs) + '</TotalTimeSeconds>\n<DistanceMeters>' + (s1CumDist[s1CumDist.length - 1] || 0).toFixed(2) + '</DistanceMeters>\n<Intensity>Active</Intensity>\n</Lap>\n<Track>\n';
+    for (let i = 0; i < s1Points.length; i++) {
+      const p = s1Points[i];
+      const t = new Date(startMs + Math.round(s1CumDist[i] / speedMs) * 1000);
+      out += '<Trackpoint><Time>' + t.toISOString().replace(/\.\d{3}Z$/, 'Z') + '</Time><Position><LatitudeDegrees>' + p.lat + '</LatitudeDegrees><LongitudeDegrees>' + p.lon + '</LongitudeDegrees></Position><AltitudeMeters>' + p.ele + '</AltitudeMeters><DistanceMeters>' + s1CumDist[i].toFixed(2) + '</DistanceMeters></Trackpoint>\n';
+    }
+    out += '</Track>\n';
+    for (const w of s1Waypoints) {
+      const t2 = new Date(startMs + Math.round(s1CumDist[w.arrIdx] / speedMs) * 1000);
+      out += '<CoursePoint><Name>' + escapeHtml(w.name || '') + '</Name><Time>' + t2.toISOString().replace(/\.\d{3}Z$/, 'Z') + '</Time><Position><LatitudeDegrees>' + w.lat + '</LatitudeDegrees><LongitudeDegrees>' + w.lon + '</LongitudeDegrees></Position><PointType>' + escapeHtml(w.type || 'Generic') + '</PointType></CoursePoint>\n';
+    }
+    out += '</Course>\n</Courses>\n</TrainingCenterDatabase>';
     return out;
   }
 
@@ -1516,26 +1921,16 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
   sUploadZone.addEventListener('click', () => { sFileInput.value = ''; sFileInput.click(); });
   sUploadZone.addEventListener('dragover', e => { e.preventDefault(); sUploadZone.classList.add('over'); });
   sUploadZone.addEventListener('dragleave', () => sUploadZone.classList.remove('over'));
-  sUploadZone.addEventListener('drop', e => {
-    e.preventDefault(); sUploadZone.classList.remove('over');
-    const f = e.dataTransfer.files[0];
-    if (f) handleSFile(f);
-  });
-  sFileInput.addEventListener('change', e => {
-    const f = e.target.files[0];
-    sFileInput.value = '';
-    if (f) handleSFile(f);
-  });
+  sUploadZone.addEventListener('drop', e => { e.preventDefault(); sUploadZone.classList.remove('over'); const f = e.dataTransfer.files[0]; if (f) handleSFile(f); });
+  sFileInput.addEventListener('change', e => { const f = e.target.files[0]; sFileInput.value = ''; if (f) handleSFile(f); });
 
   function handleSFile(file) {
     hideSError();
-    if (!file.name.toLowerCase().endsWith('.gpx')) {
-      showSError(t('s1ErrNotGpx'));
-      return;
-    }
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith('.gpx') && !lower.endsWith('.tcx')) { showSError(t('s1ErrNotGpx')); return; }
     const reader = new FileReader();
     reader.onload = e => {
-      const parsed = s1ParseGpx(e.target.result);
+      const parsed = lower.endsWith('.tcx') ? s1ParseTcx(e.target.result) : s1ParseGpx(e.target.result);
       if (!parsed.points.length) { showSError(t('errNoTrack')); return; }
 
       pendingFile = file;
@@ -1546,63 +1941,69 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
         return { ...w, arrIdx: idx, km: s1CumDist[idx] / 1000, ele: s1Points[idx].ele };
       });
       s1EditingWptIdx = null;
+      s1Corrected = false;
 
       sFileName.textContent = file.name;
       sFileBadge.style.display = 'flex';
-      sCourseName.value = file.name.replace(/\.gpx$/i, '') + '_corrected';
+      sCourseName.value = file.name.replace(/\.(gpx|tcx)$/i, '') + '_corrected';
+      s1Param.value = '';
       sResult.style.display = 'none';
-      s1RenderStats();
+      sOptionsBar.style.display = 'none';
+      sDownloadBar.style.display = 'none';
+      s1Thresh.value = 0; s1ThreshVal.textContent = '0 m';
+      s1RenderStats(0);
       s1RenderWaypoints();
+      s1ControlBar.style.display = 'flex';
+      s1DrawChart();
       sRunBtn.style.display = 'flex';
     };
     reader.readAsText(file);
   }
 
-  // ── 보정 실행 ──
+  // ── 보정 실행 (서버는 raw 좌표만 반환) ──
   sRunBtn.addEventListener('click', async () => {
     const url = backendUrl();
     if (!url || url.includes('YOUR-SUBDOMAIN')) { showSError(t('s1ErrBackendNotSet')); return; }
     if (!s1Points.length) return;
     hideSError();
     sResult.style.display = 'none';
+    sOptionsBar.style.display = 'none';
+    sDownloadBar.style.display = 'none';
     sRunBtn.style.display = 'none';
     sProgress.style.display = 'flex';
     sProgressText.textContent = t('s1ProgressText');
 
-    const beforeGain = Math.round(s1CalcStats(s1Points).gain);
+    const beforeGain = Math.round(s1CalcStats(s1Points, 0).gain);
 
     try {
-      const name = sCourseName.value || pendingFile.name.replace(/\.gpx$/i, '');
-      const modifiedGpx = s1BuildGpx(name);
+      const tempName = pendingFile.name.replace(/\.(gpx|tcx)$/i, '');
+      const modifiedGpx = s1BuildGpx(tempName);
       const blob = new Blob([modifiedGpx], { type: 'application/gpx+xml' });
       const form = new FormData();
       form.append('file', blob, pendingFile.name);
-      form.append('format', sFormatSelect.value);
-      form.append('name', name);
+      form.append('name', tempName);
 
       const res = await fetch(url + '/api/correct', { method: 'POST', body: form });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || 'Unknown error');
 
-      resultData = { content: data.content, filename: data.filename, format: data.format };
+      // 서버가 돌려준 보정 좌표로 갱신 (좌표는 원본과 동일 순서/개수)
+      s1Points = s1Points.map((p, i) => ({ ...p, ele: data.points[i] ? data.points[i].ele : p.ele }));
+      s1CumDist = s1ComputeCumDist(s1Points);
+      s1Waypoints = s1Waypoints.map(w => ({ ...w, ele: s1Points[w.arrIdx].ele }));
+      s1Corrected = true;
 
-      // 보정 후 고도 재파싱 (before → after 비교 + 통계카드 갱신용)
-      const afterParsed = s1ParseGpx(data.content);
-      const afterGain = Math.round(s1CalcStats(afterParsed.points).gain);
-
-      let msg = t('s1ResultText')
-        .replace('{before}', fmtNum(beforeGain))
-        .replace('{after}', fmtNum(afterGain));
-      if (data.originalPointCount !== data.correctedPointCount) {
-        msg += t('s1ResultResampled');
-      }
+      const afterGain = Math.round(s1CalcStats(s1Points, 0).gain);
+      let msg = t('s1ResultText').replace('{before}', fmtNum(beforeGain)).replace('{after}', fmtNum(afterGain));
+      if (data.originalPointCount !== data.correctedPointCount) msg += t('s1ResultResampled');
       sResultText.textContent = msg;
       sResult.style.display = 'block';
 
-      // 통계 카드를 보정 후 값으로 갱신 (웨이포인트는 그대로 - 편집 상태 유지)
-      s1Points = afterParsed.points;
-      s1CumDist = s1ComputeCumDist(s1Points);
-      s1RenderStats();
+      s1RenderStats(parseInt(s1Thresh.value) || 0);
+      s1RenderWaypoints();
+      s1DrawChart();
+      sOptionsBar.style.display = 'flex';
+      sDownloadBar.style.display = 'flex';
     } catch (err) {
       showSError(t('s1ErrFailed') + err.message);
       sRunBtn.style.display = 'flex';
@@ -1611,30 +2012,68 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
     }
   });
 
+  // ── 다운로드 (이 시점에 이름/형식 반영해서 클라이언트에서 조립) ──
   sDownloadBtn.addEventListener('click', () => {
-    if (!resultData) return;
-    const name = (sCourseName.value || pendingFile.name.replace(/\.gpx$/i, '')).trim();
+    if (!s1Points.length) return;
+    const name = (sCourseName.value || 'course').trim() || 'course';
+    const format = sFormatSelect.value;
+    const content = format === 'tcx' ? s1BuildTcx(name) : s1BuildGpx(name);
     const finalName = sanitizeFilename(name) || 'course';
-    const content = applyNameToResultContent(resultData.content, resultData.format, name);
-    const mime = resultData.format === 'tcx' ? 'application/vnd.garmin.tcx+xml' : 'application/gpx+xml';
+    const mime = format === 'tcx' ? 'application/vnd.garmin.tcx+xml' : 'application/gpx+xml';
     const blob = new Blob([content], { type: mime });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = finalName + '.' + resultData.format;
+    a.download = finalName + '.' + format;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
   });
 
-  function applyNameToResultContent(content, format, name) {
-    const esc = escapeHtml(name);
-    if (format === 'tcx') {
-      return content.replace(/<Name>[^<]*<\/Name>/, '<Name>' + esc + '</Name>');
+  // ── CSV 내보내기 ──
+  s1CsvBtn.addEventListener('click', () => {
+    if (!s1Waypoints.length) return;
+    const name = (sCourseName.value || 'course').trim() || 'course';
+    const header = [t('csvName'), t('csvSegDist'), t('csvCumDist'), t('csvEle'), t('csvSegGain'), t('csvSegLoss')];
+    const rows = [header.map(csvEscape).join(',')];
+    let prevKm = 0, prevArrIdx = 0;
+    for (const w of s1Waypoints) {
+      const seg = s1CalcSegmentGainLoss(prevArrIdx, w.arrIdx);
+      const segKm = w.km - prevKm;
+      rows.push([csvEscape(w.name), segKm.toFixed(1), w.km.toFixed(1), Math.round(w.ele), Math.round(seg.gain), Math.round(seg.loss)].join(','));
+      prevKm = w.km; prevArrIdx = w.arrIdx;
     }
-    let out = content.replace(/(<metadata><name>)[^<]*(<\/name><\/metadata>)/, (m, p1, p2) => p1 + esc + p2);
-    out = out.replace(/(<trk><name>)[^<]*(<\/name>)/, (m, p1, p2) => p1 + esc + p2);
-    return out;
-  }
+    download('\uFEFF' + rows.join('\r\n'), sanitizeFilename(name) + '_waypoints.csv', 'text/csv;charset=utf-8');
+  });
+
+  // ── 매개변수 이스터에그 (오동도짱) ──
+  s1Param.addEventListener('input', () => {
+    // ②탭과 동일한 easterEggMode 전역 변수를 공유하지 않고, ①탭 자체 표시만 전환
+    s1EasterEgg = s1Param.value.trim() === '오동도짱';
+    s1RenderWaypoints();
+  });
+
+  // ── 홈 버튼 리셋 훅 (전역 goHome()에서 호출) ──
+  window.s1Reset = function () {
+    pendingFile = null;
+    s1Points = []; s1Waypoints = []; s1CumDist = [];
+    s1EditingWptIdx = null; s1Corrected = false; s1EasterEgg = false;
+    hideSError();
+    sFileInput.value = '';
+    sFileBadge.style.display = 'none';
+    s1StatsGrid.style.display = 'none';
+    s1WptWrap.style.display = 'none';
+    s1ControlBar.style.display = 'none';
+    s1ChartWrap.style.display = 'none';
+    sRunBtn.style.display = 'none';
+    sProgress.style.display = 'none';
+    sResult.style.display = 'none';
+    sOptionsBar.style.display = 'none';
+    sDownloadBar.style.display = 'none';
+    sCourseName.value = '';
+    s1Param.value = '';
+    s1Thresh.value = 0; s1ThreshVal.textContent = '0 m';
+    if (s1Chart) { s1Chart.destroy(); s1Chart = null; }
+  };
 })();
 
 // ═══════════════════════════════════════════════════════
@@ -1724,6 +2163,7 @@ function goHome() {
   threshSlid.value = 0;
   threshVal.textContent = '0 m';
   if (chart) { chart.destroy(); chart = null; }
+  if (window.s1Reset) window.s1Reset();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1774,8 +2214,8 @@ function buildWaypointsCsv() {
     const segKm = w.km - prevKm;
     rows.push([
       csvEscape(decodeXml(w.nameRaw)),
-      segKm.toFixed(2),
-      w.km.toFixed(2),
+      segKm.toFixed(1),
+      w.km.toFixed(1),
       Math.round(w.ele),
       Math.round(seg.gain),
       Math.round(seg.loss)
