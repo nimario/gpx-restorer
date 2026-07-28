@@ -398,6 +398,20 @@
     transition:border-color .2s;
   }
   #courseNameInput:focus { border-color:var(--accent); }
+  #paramInput {
+    flex:0 0 90px;
+    min-width:0;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:9px 10px;
+    color:var(--text);
+    font-size:.88rem;
+    font-family:inherit;
+    outline:none;
+    transition:border-color .2s;
+  }
+  #paramInput:focus { border-color:var(--accent); }
 
   /* ── Run button ── */
   #runBtn {
@@ -547,6 +561,12 @@
     gap:14px;
     margin-bottom:24px;
   }
+  #s1StatsGrid {
+    display:none;
+    grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+    gap:14px;
+    margin-bottom:18px;
+  }
   .card {
     background:var(--card);
     border:1px solid var(--border);
@@ -599,7 +619,15 @@
     padding:20px;
     margin-bottom:24px;
   }
-  #wptWrap h2, #chartWrap h2 {
+  #s1WptWrap {
+    display:none;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:18px;
+  }
+  #wptWrap h2, #chartWrap h2, #s1WptWrap h2 {
     font-size:.88rem; font-weight:700; color:var(--dim);
     text-transform:uppercase; letter-spacing:.1em;
     margin-bottom:14px;
@@ -730,6 +758,7 @@
     h1 { font-size:1.28rem; }
     #exportBar { flex-direction:column; }
     #courseNameBar { flex-direction:column; align-items:stretch; gap:6px; }
+    #paramInput { flex:1 1 auto; }
     .wpt-row { grid-template-columns:30px 1fr 60px 54px 46px; font-size:.82rem; }
     .wpt-legend, .wpt-row.wpt-table { grid-template-columns:24px 1fr 40px 40px 34px 46px 38px; }
     .sub { padding-left:0; }
@@ -754,23 +783,24 @@
 
 <!-- 탭 전환 -->
 <div id="tabSwitch">
-  <button class="tab-btn" data-tab="strava" id="tabBtnStrava" data-i18n="tab1Name">① 스트라바 보정</button>
-  <button class="tab-btn active" data-tab="restore" id="tabBtnRestore" data-i18n="tab2Name">② 원본고도 복원</button>
+  <button class="tab-btn active" data-tab="strava" id="tabBtnStrava" data-i18n="tab1Name">① 스트라바 보정</button>
+  <button class="tab-btn" data-tab="restore" id="tabBtnRestore" data-i18n="tab2Name">② 원본고도 복원</button>
 </div>
 
 <!-- 탭: 스트라바 보정 -->
-<div id="tabPanelStrava" class="tab-panel" style="display:none;">
+<div id="tabPanelStrava" class="tab-panel">
 
   <div id="guideBox">
     <h2 data-i18n="guideTitle">사용 방법</h2>
     <p class="guide-bg" data-i18n="s1GuideBg">GPX 파일의 고도 정보를 스트라바 기반의 고도 정보로 보정합니다. 실제 사용자들이 기록한 데이터를 기반으로 하기 때문에, 위성 지도 근사값보다 정확한 경우가 많습니다.</p>
     <ol>
       <li data-i18n="s1Step1">고도를 보정하고 싶은 GPX 파일 업로드</li>
-      <li data-i18n="s1Step2">코스 이름 지정, 내보낼 형식 선택 후 보정 시작 클릭</li>
-      <li data-i18n="s1Step3">완성된 GPX/TCX 다운로드</li>
-      <li data-i18n="s1Step4">라이딩가즈아에서 웨이포인트 작업 → 다시 GPX/TCX로 다운로드</li>
-      <li data-i18n="s1Step5">그 파일을 [② 원본고도 복원] 탭에 올려서 최종 마무리</li>
+      <li data-i18n="s1Step2">현재 고도·웨이포인트 확인, 필요하면 이름/유형 수정 또는 삭제</li>
+      <li data-i18n="s1Step3">코스 이름 지정, 내보낼 형식 선택 후 보정 시작</li>
+      <li data-i18n="s1Step4">"X m → Y m로 보정됨" 결과 확인</li>
+      <li data-i18n="s1Step5">GPX 또는 TCX 다운로드</li>
     </ol>
+    <p class="guide-warn" data-i18n="s1GuideWarn">⚠️ 이 결과를 라이딩가즈아에서 다시 만지면 고도가 또 뭉개집니다. 그럴 계획이면 그 이후엔 ② 탭으로 오세요.</p>
   </div>
 
   <div id="stravaErrorMsg"></div>
@@ -788,6 +818,39 @@
   <div id="stravaFileBadge">
     <span>📄</span>
     <span class="fname" id="stravaFileName"></span>
+  </div>
+
+  <div id="s1StatsGrid">
+    <div class="card dist">
+      <span class="card-icon">📏</span>
+      <div class="card-val" id="s1StatDist">—</div>
+      <div class="card-lbl" data-i18n="statDist">총 거리</div>
+    </div>
+    <div class="card gain">
+      <span class="card-icon">📈</span>
+      <div class="card-val" id="s1StatGain">—</div>
+      <div class="card-lbl" data-i18n="statGain">획득 고도 ↑</div>
+    </div>
+    <div class="card loss">
+      <span class="card-icon">📉</span>
+      <div class="card-val" id="s1StatLoss">—</div>
+      <div class="card-lbl" data-i18n="statLoss">획득 내리막 ↓</div>
+    </div>
+    <div class="card peak">
+      <span class="card-icon">🏔️</span>
+      <div class="card-val" id="s1StatMax">—</div>
+      <div class="card-lbl" data-i18n="statMax">최고 고도</div>
+    </div>
+    <div class="card valley">
+      <span class="card-icon">🏕️</span>
+      <div class="card-val" id="s1StatMin">—</div>
+      <div class="card-lbl" data-i18n="statMin">최저 고도</div>
+    </div>
+  </div>
+
+  <div id="s1WptWrap">
+    <h2 data-i18n="wptTitle">웨이포인트</h2>
+    <div id="s1WptList"></div>
   </div>
 
   <div id="stravaOptionsBar">
@@ -815,20 +878,20 @@
 </div>
 
 <!-- 탭: 원본고도 복원 (기존 도구) -->
-<div id="tabPanelRestore" class="tab-panel">
+<div id="tabPanelRestore" class="tab-panel" style="display:none;">
 
 <!-- 사용법 안내 -->
 <div id="guideBox">
   <h2 data-i18n="guideTitle">사용 방법</h2>
-  <p class="guide-bg" data-i18n="guideBg">라이딩가즈아는 GPX 파일을 가져오는 즉시 고도를 자동으로 재샘플링합니다. 웨이포인트 작업은 라이딩가즈아가 편리해서 거기서 하게 되는 것뿐이고, 고도가 정확하다고 판단되는 파일이라도 import되는 순간 값이 달라집니다. 그 상태로 가민에 넣고 라이딩하면 클라임프로 모양 및 수치가 실제와 다르게 나옵니다.</p>
+  <p class="guide-bg" data-i18n="guideBg">라이딩가즈아는 GPX 파일을 가져오는 즉시 고도를 자동으로 재샘플링합니다. 다만 그 직전 값을 파일 안에 몰래 남겨두는데, 이 탭은 그 백업값을 즉시 그대로 꺼내옵니다 — 스트라바를 다시 거치지 않아서 훨씬 빠릅니다.</p>
+  <p class="guide-bg" data-i18n="guideBg2">① 탭으로 이미 보정한 파일을 라이딩가즈아에서 다시 편집했다면, 정확히 이 상황이라 ①을 또 돌릴 필요 없이 여기서 바로 복구됩니다.</p>
   <ol>
-    <li data-i18n="guideStep1">스트라바 등 본인이 신뢰하는 방법으로 고도가 정확하다고 판단되는 GPX 파일을 준비</li>
-    <li data-i18n="guideStep2">그 파일을 라이딩가즈아에 가져와 웨이포인트 작업 후 GPX 또는 TCX로 내보내기(Export)</li>
-    <li data-i18n="guideStep3">여기에 그 파일을 업로드</li>
-    <li data-i18n="guideStep4">[원본 고도 복원] 클릭</li>
-    <li data-i18n="guideStep5">GPX 또는 TCX로 다시 내보내서 가민에 삽입</li>
+    <li data-i18n="guideStep1">라이딩가즈아에서 웨이포인트 작업까지 마친 GPX/TCX 업로드</li>
+    <li data-i18n="guideStep2">[원본 고도 복원] 클릭</li>
+    <li data-i18n="guideStep3">필요하면 웨이포인트 이름/유형 수정 또는 삭제</li>
+    <li data-i18n="guideStep4">GPX 또는 TCX로 다시 내보내기</li>
   </ol>
-  <p class="guide-warn" data-i18n="guideWarn">⚠️ 라이딩가즈아에서 내보낸 파일만 복원할 수 있습니다.</p>
+  <p class="guide-warn" data-i18n="guideWarn">⚠️ 백업값이 없는 파일은 복원할 게 없어 작업이 중단됩니다. 이 경우 ① 탭을 이용하세요.</p>
 </div>
 
 <!-- Upload -->
@@ -854,6 +917,8 @@
   <label for="courseNameInput" data-i18n="courseNameLabel">코스 이름</label>
   <input type="text" id="courseNameInput" autocomplete="off" spellcheck="false"
          title="GPX/TCX 파일의 name 태그와 다운로드 파일명에 사용됩니다">
+  <label for="paramInput" data-i18n="paramLabel">매개변수</label>
+  <input type="text" id="paramInput" autocomplete="off" spellcheck="false">
 </div>
 
 <!-- Run -->
@@ -871,6 +936,10 @@
   <button class="export-btn" id="btnTcx">
     <span class="ico">⬇️</span>
     <span class="txt"><span data-i18n="exportTcx">TCX 내보내기</span></span>
+  </button>
+  <button class="export-btn" id="btnCsv">
+    <span class="ico">📊</span>
+    <span class="txt"><span data-i18n="exportCsv">웨이포인트 CSV</span></span>
   </button>
 </div>
 
@@ -959,15 +1028,17 @@ const I18N = {
     uploadTitle:'GPX/TCX 파일을 드래그하거나 클릭해서 업로드',
     uploadHint:'파일은 브라우저에서만 처리되며 서버로 전송되지 않습니다',
     guideTitle:'사용 방법',
-    guideBg:'라이딩가즈아는 GPX 파일을 가져오는 즉시 고도를 자동으로 재샘플링합니다. 웨이포인트 작업은 라이딩가즈아가 편리해서 거기서 하게 되는 것뿐이고, 고도가 정확하다고 판단되는 파일이라도 import되는 순간 값이 달라집니다. 그 상태로 가민에 넣고 라이딩하면 클라임프로 모양 및 수치가 실제와 다르게 나옵니다.',
+    guideBg:'라이딩가즈아는 GPX 파일을 가져오는 즉시 고도를 자동으로 재샘플링합니다. 다만 그 직전 값을 파일 안에 몰래 남겨두는데, 이 탭은 그 백업값을 즉시 그대로 꺼내옵니다 — 스트라바를 다시 거치지 않아서 훨씬 빠릅니다.',
+    guideBg2:'① 탭으로 이미 보정한 파일을 라이딩가즈아에서 다시 편집했다면, 정확히 이 상황이라 ①을 또 돌릴 필요 없이 여기서 바로 복구됩니다.',
     tab1Name:'① 스트라바 보정',
     tab2Name:'② 원본고도 복원',
     s1GuideBg:'GPX 파일의 고도 정보를 스트라바 기반의 고도 정보로 보정합니다. 실제 사용자들이 기록한 데이터를 기반으로 하기 때문에, 위성 지도 근사값보다 정확한 경우가 많습니다.',
     s1Step1:'고도를 보정하고 싶은 GPX 파일 업로드',
-    s1Step2:'코스 이름 지정, 내보낼 형식 선택 후 보정 시작 클릭',
-    s1Step3:'완성된 GPX/TCX 다운로드',
-    s1Step4:'라이딩가즈아에서 웨이포인트 작업 → 다시 GPX/TCX로 다운로드',
-    s1Step5:'그 파일을 [② 원본고도 복원] 탭에 올려서 최종 마무리',
+    s1Step2:'현재 고도·웨이포인트 확인, 필요하면 이름/유형 수정 또는 삭제',
+    s1Step3:'코스 이름 지정, 내보낼 형식 선택 후 보정 시작',
+    s1Step4:'"X m → Y m로 보정됨" 결과 확인',
+    s1Step5:'GPX 또는 TCX 다운로드',
+    s1GuideWarn:'⚠️ 이 결과를 라이딩가즈아에서 다시 만지면 고도가 또 뭉개집니다. 그럴 계획이면 그 이후엔 ② 탭으로 오세요.',
     s1UploadTitle:'GPX 파일을 드래그하거나 클릭해서 업로드',
     s1UploadHint:'시간 정보가 없는 경로 파일도 자동으로 채워서 처리합니다',
     s1FormatLabel:'내보낼 형식',
@@ -977,18 +1048,20 @@ const I18N = {
     s1ErrNotGpx:'.gpx 파일만 업로드할 수 있습니다.',
     s1ErrBackendNotSet:'백엔드 서버 주소가 설정되지 않았습니다. 배포 후 STRAVA_BACKEND_URL 값을 채워주세요.',
     s1ErrFailed:'보정 실패: ',
-    s1ResultText:'보정 완료. 원본 {orig}개 포인트 → 보정 결과 {corr}개 포인트.',
+    s1ResultText:'획득 고도 {before} m → {after} m로 보정됨.',
     s1ResultResampled:' (스트라바가 포인트 수를 조정했습니다.)',
-    guideStep1:'스트라바 등 본인이 신뢰하는 방법으로 고도가 정확하다고 판단되는 GPX 파일을 준비',
-    guideStep2:'그 파일을 라이딩가즈아에 가져와 웨이포인트 작업 후 GPX 또는 TCX로 내보내기(Export)',
-    guideStep3:'여기에 그 파일을 업로드',
-    guideStep4:'[원본 고도 복원] 클릭',
-    guideStep5:'GPX 또는 TCX로 다시 내보내서 가민에 삽입',
-    guideWarn:'⚠️ 라이딩가즈아에서 내보낸 파일만 복원할 수 있습니다.',
+    guideStep1:'라이딩가즈아에서 웨이포인트 작업까지 마친 GPX/TCX 업로드',
+    guideStep2:'[원본 고도 복원] 클릭',
+    guideStep3:'필요하면 웨이포인트 이름/유형 수정 또는 삭제',
+    guideStep4:'GPX 또는 TCX로 다시 내보내기',
+    guideWarn:'⚠️ 백업값이 없는 파일은 복원할 게 없어 작업이 중단됩니다. 이 경우 ① 탭을 이용하세요.',
     courseNameLabel:'코스 이름',
+    paramLabel:'매개변수',
     run:'원본 고도 복원',
     exportGpx:'GPX 내보내기',
     exportTcx:'TCX 내보내기',
+    exportCsv:'웨이포인트 CSV',
+    csvName:'이름', csvSegDist:'구간거리(km)', csvCumDist:'누적거리(km)', csvEle:'고도(m)', csvSegGain:'구간획득고도(m)', csvSegLoss:'구간획득내리막(m)',
     statDist:'총 거리', statGain:'획득 고도 ↑', statLoss:'획득 내리막 ↓',
     statMax:'최고 고도', statMin:'최저 고도', rawBadge:'파일 원본값',
     noiseLabel:'노이즈 필터 (참고용)',
@@ -1020,15 +1093,17 @@ const I18N = {
     uploadTitle:'Drag & drop a GPX or TCX file, or click to upload',
     uploadHint:'Processed entirely in your browser — nothing is sent to a server',
     guideTitle:'How to use',
-    guideBg:"ridingazua automatically resamples elevation the instant you import a GPX file. Working on waypoints is just something you end up doing there because ridingazua is convenient for it — even a file you believe has accurate elevation gets altered the moment it's imported. Load that onto a Garmin and ride it, and the Climb Pro profile shape and numbers won't match reality.",
+    guideBg:"ridingazua automatically resamples elevation the instant you import a GPX file. But it quietly keeps the value from right before that inside the file — this tab pulls that backup straight out, without going through Strava again, so it's much faster.",
+    guideBg2:"If you edited a file that ① already corrected, back in ridingazua, this is exactly that situation — no need to run ① again, just restore it here directly.",
     tab1Name:'① Strava Correction',
     tab2Name:'② Restore Original Elevation',
     s1GuideBg:"Corrects a GPX file's elevation using Strava-based elevation data. Since it's based on data actually recorded by real users, it's often more accurate than satellite map estimates.",
     s1Step1:'Upload the GPX file whose elevation you want corrected',
-    s1Step2:'Set a course name, choose the export format, then click Run Correction',
-    s1Step3:'Download the finished GPX/TCX',
-    s1Step4:'Work on waypoints in ridingazua → download as GPX/TCX again',
-    s1Step5:'Upload that file to the [② Restore Original Elevation] tab to finish',
+    s1Step2:'Check current elevation and waypoints; edit names/types or delete if needed',
+    s1Step3:'Set a course name, choose the export format, then run correction',
+    s1Step4:'Check the "X m → Y m" result',
+    s1Step5:'Download the GPX or TCX',
+    s1GuideWarn:"⚠️ If you touch this result again in ridingazua, elevation gets mangled again. If that's the plan, come back to tab ② afterward.",
     s1UploadTitle:'Drag & drop a GPX file, or click to upload',
     s1UploadHint:'Route files with no time data are handled automatically',
     s1FormatLabel:'Export format',
@@ -1038,18 +1113,20 @@ const I18N = {
     s1ErrNotGpx:'Only .gpx files can be uploaded.',
     s1ErrBackendNotSet:'The backend server address is not set. Fill in STRAVA_BACKEND_URL after deploying.',
     s1ErrFailed:'Correction failed: ',
-    s1ResultText:'Correction complete. {orig} original points → {corr} corrected points.',
+    s1ResultText:'Elevation gain corrected: {before} m → {after} m.',
     s1ResultResampled:' (Strava adjusted the point count.)',
-    guideStep1:'Prepare a GPX file with elevation you believe to be accurate, using Strava or any method you trust',
-    guideStep2:'Import that file into ridingazua, add waypoints, then export as GPX or TCX',
-    guideStep3:'Upload that file here',
-    guideStep4:'Click [Restore Original Elevation]',
-    guideStep5:'Export as GPX or TCX again and load it onto your Garmin',
-    guideWarn:'⚠️ Only files exported from ridingazua can be restored.',
+    guideStep1:'Upload a GPX/TCX that already has waypoints done in ridingazua',
+    guideStep2:'Click [Restore Original Elevation]',
+    guideStep3:'Edit waypoint names/types or delete them if needed',
+    guideStep4:'Export as GPX or TCX again',
+    guideWarn:'⚠️ A file with no backup value has nothing to restore, so the process stops. Use tab ① in that case.',
     courseNameLabel:'Course Name',
+    paramLabel:'Parameter',
     run:'Restore Original Elevation',
     exportGpx:'Export GPX',
     exportTcx:'Export TCX',
+    exportCsv:'Waypoints CSV',
+    csvName:'Name', csvSegDist:'Segment Dist (km)', csvCumDist:'Cumulative Dist (km)', csvEle:'Elevation (m)', csvSegGain:'Segment Gain (m)', csvSegLoss:'Segment Loss (m)',
     statDist:'Total Distance', statGain:'Elevation Gain ↑', statLoss:'Elevation Loss ↓',
     statMax:'Max Elevation', statMin:'Min Elevation', rawBadge:'raw file value',
     noiseLabel:'Noise filter (reference)',
@@ -1081,15 +1158,17 @@ const I18N = {
     uploadTitle:'GPXまたはTCXファイルをドラッグ、またはクリックしてアップロード',
     uploadHint:'ファイルはブラウザ内でのみ処理され、サーバーには送信されません',
     guideTitle:'使い方',
-    guideBg:'ridingazuaはGPXファイルを取り込んだ瞬間に、標高を自動的に再サンプリングします。ウェイポイント作業はridingazuaが便利だから行うだけのことで、標高が正確だと思われるファイルでも、取り込まれた瞬間に値が変わってしまいます。その状態でGarminに入れてライドすると、クライムプロの形と数値が実際と異なってしまいます。',
+    guideBg:'ridingazuaはGPXファイルを取り込んだ瞬間に、標高を自動的に再サンプリングします。ただしその直前の値をファイル内にこっそり残しており、このタブはそのバックアップ値をそのまま取り出します — Stravaを再度経由しないので、はるかに高速です。',
+    guideBg2:'① タブですでに補正したファイルをridingazuaで再度編集した場合、まさにこの状況なので①をもう一度実行する必要はなく、ここで直接復元できます。',
     tab1Name:'① Strava補正',
     tab2Name:'② 元の標高を復元',
     s1GuideBg:'GPXファイルの標高情報をStravaベースの標高情報に補正します。実際のユーザーが記録したデータを基にしているため、衛星地図の推定値より正確な場合が多いです。',
     s1Step1:'標高を補正したいGPXファイルをアップロード',
-    s1Step2:'コース名を指定し、書き出し形式を選んで補正開始をクリック',
-    s1Step3:'完成したGPX/TCXをダウンロード',
-    s1Step4:'ridingazuaでウェイポイント作業 → 再度GPX/TCXでダウンロード',
-    s1Step5:'そのファイルを[② 元の標高を復元]タブにアップロードして仕上げ',
+    s1Step2:'現在の標高・ウェイポイントを確認、必要なら名前/種類を修正または削除',
+    s1Step3:'コース名を指定し、書き出し形式を選んで補正開始',
+    s1Step4:'"X m → Y mに補正されました"の結果を確認',
+    s1Step5:'GPXまたはTCXをダウンロード',
+    s1GuideWarn:'⚠️ この結果をridingazuaで再度編集すると標高がまた崩れます。その予定なら、その後は②タブへどうぞ。',
     s1UploadTitle:'GPXファイルをドラッグ、またはクリックしてアップロード',
     s1UploadHint:'時刻情報のない経路ファイルも自動的に補って処理します',
     s1FormatLabel:'書き出し形式',
@@ -1099,18 +1178,20 @@ const I18N = {
     s1ErrNotGpx:'.gpxファイルのみアップロードできます。',
     s1ErrBackendNotSet:'バックエンドサーバーのアドレスが設定されていません。デプロイ後にSTRAVA_BACKEND_URLの値を入力してください。',
     s1ErrFailed:'補正に失敗しました: ',
-    s1ResultText:'補正完了。元{orig}ポイント → 補正結果{corr}ポイント。',
+    s1ResultText:'獲得標高 {before} m → {after} mに補正されました。',
     s1ResultResampled:'(Stravaがポイント数を調整しました。)',
-    guideStep1:'Stravaなど、信頼できる方法で標高が正確だと思われるGPXファイルを用意',
-    guideStep2:'そのファイルをridingazuaに取り込みウェイポイント作業後、GPXまたはTCXでエクスポート',
-    guideStep3:'そのファイルをここにアップロード',
-    guideStep4:'[元の標高を復元]をクリック',
-    guideStep5:'GPXまたはTCXで再度書き出してGarminに転送',
-    guideWarn:'⚠️ ridingazuaから書き出したファイルのみ復元できます。',
+    guideStep1:'ridingazuaでウェイポイント作業まで終えたGPX/TCXをアップロード',
+    guideStep2:'[元の標高を復元]をクリック',
+    guideStep3:'必要ならウェイポイントの名前/種類を修正または削除',
+    guideStep4:'GPXまたはTCXで再度書き出し',
+    guideWarn:'⚠️ バックアップ値のないファイルは復元するものがなく、処理が中止されます。その場合は①タブをご利用ください。',
     courseNameLabel:'コース名',
+    paramLabel:'パラメータ',
     run:'元の標高を復元',
     exportGpx:'GPX 書き出し',
     exportTcx:'TCX 書き出し',
+    exportCsv:'ウェイポイントCSV',
+    csvName:'名前', csvSegDist:'区間距離(km)', csvCumDist:'累積距離(km)', csvEle:'標高(m)', csvSegGain:'区間獲得標高(m)', csvSegLoss:'区間下降標高(m)',
     statDist:'総距離', statGain:'獲得標高 ↑', statLoss:'下降標高 ↓',
     statMax:'最高標高', statMin:'最低標高', rawBadge:'ファイル元値',
     noiseLabel:'ノイズフィルター (参考用)',
@@ -1216,6 +1297,7 @@ const fileBadge      = document.getElementById('fileBadge');
 const fileNameEl     = document.getElementById('fileNameText');
 const courseNameBar  = document.getElementById('courseNameBar');
 const courseNameInput= document.getElementById('courseNameInput');
+const paramInput     = document.getElementById('paramInput');
 const runBtn         = document.getElementById('runBtn');
 const restoreEl      = document.getElementById('restoreInfo');
 const exportBar      = document.getElementById('exportBar');
@@ -1260,9 +1342,14 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
   const sResult        = document.getElementById('stravaResult');
   const sResultText    = document.getElementById('stravaResultText');
   const sDownloadBtn   = document.getElementById('stravaDownloadBtn');
+  const s1WptList      = document.getElementById('s1WptList');
+  const s1WptWrap      = document.getElementById('s1WptWrap');
+  const s1StatsGrid    = document.getElementById('s1StatsGrid');
 
   let pendingFile = null;
-  let resultData  = null; // { content, filename }
+  let resultData  = null; // { content, filename, format }
+  let s1Points = [], s1Waypoints = [], s1CumDist = [];
+  let s1EditingWptIdx = null;
 
   function backendUrl() {
     return STRAVA_BACKEND_URL.replace(/\/+$/, '');
@@ -1273,6 +1360,157 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
     sErrorMsg.style.display = 'block';
   }
   function hideSError() { sErrorMsg.style.display = 'none'; }
+
+  // ── 범용 GPX 파싱 (라이딩가즈아 전용 아님 - 어디서 만든 GPX든 허용) ──
+  function s1ParseGpx(text) {
+    const points = [];
+    const trkptRe = /<trkpt\b([^>]*)>([\s\S]*?)<\/trkpt>/g;
+    let m;
+    while ((m = trkptRe.exec(text)) !== null) {
+      const attrs = m[1], inner = m[2];
+      const lat = parseFloat((attrs.match(/lat="([^"]*)"/) || [])[1]);
+      const lon = parseFloat((attrs.match(/lon="([^"]*)"/) || [])[1]);
+      const eleM = inner.match(/<ele>([^<]*)<\/ele>/);
+      const timeM = inner.match(/<time>([^<]*)<\/time>/);
+      if (isNaN(lat) || isNaN(lon)) continue;
+      points.push({ lat, lon, ele: eleM ? parseFloat(eleM[1]) : 0, time: timeM ? timeM[1].trim() : null });
+    }
+    const waypoints = [];
+    const wptRe = /<wpt\b([^>]*)>([\s\S]*?)<\/wpt>/g;
+    while ((m = wptRe.exec(text)) !== null) {
+      const attrs = m[1], inner = m[2];
+      const lat = parseFloat((attrs.match(/lat="([^"]*)"/) || [])[1]);
+      const lon = parseFloat((attrs.match(/lon="([^"]*)"/) || [])[1]);
+      const nameM = inner.match(/<name>([\s\S]*?)<\/name>/);
+      const typeM = inner.match(/<type>([\s\S]*?)<\/type>/);
+      if (isNaN(lat) || isNaN(lon)) continue;
+      waypoints.push({ lat, lon, name: nameM ? decodeXml(nameM[1].trim()) : '', type: typeM ? decodeXml(typeM[1].trim()) : 'Generic' });
+    }
+    return { points, waypoints };
+  }
+
+  function s1ComputeCumDist(points) {
+    const cum = [0];
+    for (let i = 1; i < points.length; i++) cum.push(cum[i - 1] + haversine(points[i - 1], points[i]));
+    return cum;
+  }
+
+  function s1NearestIdx(points, lat, lon) {
+    let best = 0, bestD = Infinity;
+    for (let i = 0; i < points.length; i++) {
+      const d = (points[i].lat - lat) ** 2 + (points[i].lon - lon) ** 2;
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    return best;
+  }
+
+  function s1CalcStats(points) {
+    let gain = 0, loss = 0;
+    let minEle = points[0].ele, maxEle = points[0].ele;
+    let baseEle = points[0].ele;
+    for (let i = 1; i < points.length; i++) {
+      const diff = points[i].ele - baseEle;
+      if (diff > 0) gain += diff; else loss += -diff;
+      baseEle = points[i].ele;
+      if (points[i].ele < minEle) minEle = points[i].ele;
+      if (points[i].ele > maxEle) maxEle = points[i].ele;
+    }
+    return { gain, loss, minEle, maxEle };
+  }
+
+  function s1RenderStats() {
+    const totalDist = s1CumDist[s1CumDist.length - 1] || 0;
+    const s = s1CalcStats(s1Points);
+    document.getElementById('s1StatDist').textContent = totalDist >= 1000 ? fmtNum(totalDist / 1000, 2) + ' km' : fmtNum(Math.round(totalDist)) + ' m';
+    document.getElementById('s1StatGain').textContent = fmtNum(Math.round(s.gain)) + ' m';
+    document.getElementById('s1StatLoss').textContent = fmtNum(Math.round(s.loss)) + ' m';
+    document.getElementById('s1StatMax').textContent  = fmtNum(Math.round(s.maxEle)) + ' m';
+    document.getElementById('s1StatMin').textContent  = fmtNum(Math.round(s.minEle)) + ' m';
+    s1StatsGrid.style.display = 'grid';
+    return s;
+  }
+
+  function s1RenderWaypoints() {
+    if (!s1Waypoints.length) { s1WptWrap.style.display = 'none'; return; }
+    s1WptList.innerHTML = s1Waypoints.map((w, i) => {
+      if (s1EditingWptIdx === i) {
+        const optionsHtml = WPT_TYPE_OPTIONS.map(o =>
+          `<option value="${o.value}"${o.value.toLowerCase() === (w.type || '').toLowerCase() ? ' selected' : ''}>${o.label}</option>`
+        ).join('');
+        return `
+          <div class="wpt-row wpt-editing" data-idx="${i}">
+            <select class="wpt-edit-type">${optionsHtml}</select>
+            <input type="text" class="wpt-edit-name" value="${escapeAttr(w.name)}" autocomplete="off">
+            <button type="button" class="wpt-save-btn" data-idx="${i}" title="저장">✓</button>
+            <button type="button" class="wpt-cancel-btn" data-idx="${i}" title="취소">✕</button>
+          </div>`;
+      }
+      return `
+        <div class="wpt-row" data-idx="${i}">
+          <div class="wpt-ico">${wptIcon(w.type)}</div>
+          <div class="wpt-name">${escapeHtml(w.name)}<small>${wptTypeLabel(w.type)}</small></div>
+          <div class="wpt-km">${fmtNum(w.km, 1)} km</div>
+          <div class="wpt-ele">${fmtNum(Math.round(w.ele))} m</div>
+          <div class="wpt-actions">
+            <button type="button" class="wpt-edit-btn" data-idx="${i}" title="편집">✏️</button>
+            <button type="button" class="wpt-del-btn" data-idx="${i}" title="삭제">🗑️</button>
+          </div>
+        </div>`;
+    }).join('');
+    s1WptWrap.style.display = 'block';
+  }
+
+  s1WptList.addEventListener('click', e => {
+    const editBtn   = e.target.closest('.wpt-edit-btn');
+    const delBtn    = e.target.closest('.wpt-del-btn');
+    const saveBtn   = e.target.closest('.wpt-save-btn');
+    const cancelBtn = e.target.closest('.wpt-cancel-btn');
+
+    if (editBtn) {
+      s1EditingWptIdx = parseInt(editBtn.dataset.idx);
+      s1RenderWaypoints();
+    } else if (delBtn) {
+      const idx = parseInt(delBtn.dataset.idx);
+      s1Waypoints.splice(idx, 1);
+      if (s1EditingWptIdx === idx) s1EditingWptIdx = null;
+      s1RenderWaypoints();
+    } else if (saveBtn) {
+      const idx = parseInt(saveBtn.dataset.idx);
+      const row = saveBtn.closest('.wpt-row');
+      const newName = row.querySelector('.wpt-edit-name').value.trim();
+      const newType = row.querySelector('.wpt-edit-type').value;
+      if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(newName)) { showSError(t('errIllegalWptChar')); return; }
+      hideSError();
+      if (newName) s1Waypoints[idx].name = newName;
+      s1Waypoints[idx].type = newType;
+      s1EditingWptIdx = null;
+      s1RenderWaypoints();
+    } else if (cancelBtn) {
+      s1EditingWptIdx = null;
+      s1RenderWaypoints();
+    }
+  });
+
+  // 현재 상태(편집 반영)를 GPX로 재조립 - 서버에 보낼 파일
+  function s1BuildGpx(name) {
+    const esc = escapeHtml(name);
+    let out = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="gpx-restorer-tab1" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>' + esc + '</name></metadata>\n';
+    for (const w of s1Waypoints) {
+      out += '<wpt lat="' + w.lat + '" lon="' + w.lon + '">';
+      if (w.name) out += '<name>' + escapeHtml(w.name) + '</name>';
+      if (w.type) out += '<type>' + escapeHtml(w.type) + '</type>';
+      out += '</wpt>\n';
+    }
+    out += '<trk><name>' + esc + '</name><trkseg>\n';
+    for (const p of s1Points) {
+      out += '<trkpt lat="' + p.lat + '" lon="' + p.lon + '">';
+      out += '<ele>' + p.ele + '</ele>';
+      if (p.time) out += '<time>' + p.time + '</time>';
+      out += '</trkpt>\n';
+    }
+    out += '</trkseg></trk>\n</gpx>';
+    return out;
+  }
 
   // ── 파일 업로드 ──
   sUploadZone.addEventListener('click', () => { sFileInput.value = ''; sFileInput.click(); });
@@ -1295,46 +1533,76 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
       showSError(t('s1ErrNotGpx'));
       return;
     }
-    pendingFile = file;
-    sFileName.textContent = file.name;
-    sFileBadge.style.display = 'flex';
-    sCourseName.value = file.name.replace(/\.gpx$/i, '') + '_corrected';
-    sRunBtn.style.display = 'flex';
-    sResult.style.display = 'none';
+    const reader = new FileReader();
+    reader.onload = e => {
+      const parsed = s1ParseGpx(e.target.result);
+      if (!parsed.points.length) { showSError(t('errNoTrack')); return; }
+
+      pendingFile = file;
+      s1Points = parsed.points;
+      s1CumDist = s1ComputeCumDist(s1Points);
+      s1Waypoints = parsed.waypoints.map(w => {
+        const idx = s1NearestIdx(s1Points, w.lat, w.lon);
+        return { ...w, arrIdx: idx, km: s1CumDist[idx] / 1000, ele: s1Points[idx].ele };
+      });
+      s1EditingWptIdx = null;
+
+      sFileName.textContent = file.name;
+      sFileBadge.style.display = 'flex';
+      sCourseName.value = file.name.replace(/\.gpx$/i, '') + '_corrected';
+      sResult.style.display = 'none';
+      s1RenderStats();
+      s1RenderWaypoints();
+      sRunBtn.style.display = 'flex';
+    };
+    reader.readAsText(file);
   }
 
   // ── 보정 실행 ──
   sRunBtn.addEventListener('click', async () => {
     const url = backendUrl();
     if (!url || url.includes('YOUR-SUBDOMAIN')) { showSError(t('s1ErrBackendNotSet')); return; }
-    if (!pendingFile) return;
+    if (!s1Points.length) return;
     hideSError();
     sResult.style.display = 'none';
     sRunBtn.style.display = 'none';
     sProgress.style.display = 'flex';
     sProgressText.textContent = t('s1ProgressText');
 
+    const beforeGain = Math.round(s1CalcStats(s1Points).gain);
+
     try {
+      const name = sCourseName.value || pendingFile.name.replace(/\.gpx$/i, '');
+      const modifiedGpx = s1BuildGpx(name);
+      const blob = new Blob([modifiedGpx], { type: 'application/gpx+xml' });
       const form = new FormData();
-      form.append('file', pendingFile);
+      form.append('file', blob, pendingFile.name);
       form.append('format', sFormatSelect.value);
-      form.append('name', sCourseName.value || pendingFile.name.replace(/\.gpx$/i, ''));
+      form.append('name', name);
 
       const res = await fetch(url + '/api/correct', { method: 'POST', body: form });
       const data = await res.json();
-
       if (!res.ok || data.error) throw new Error(data.error || 'Unknown error');
 
       resultData = { content: data.content, filename: data.filename, format: data.format };
 
+      // 보정 후 고도 재파싱 (before → after 비교 + 통계카드 갱신용)
+      const afterParsed = s1ParseGpx(data.content);
+      const afterGain = Math.round(s1CalcStats(afterParsed.points).gain);
+
       let msg = t('s1ResultText')
-        .replace('{orig}', data.originalPointCount)
-        .replace('{corr}', data.correctedPointCount);
+        .replace('{before}', fmtNum(beforeGain))
+        .replace('{after}', fmtNum(afterGain));
       if (data.originalPointCount !== data.correctedPointCount) {
         msg += t('s1ResultResampled');
       }
       sResultText.textContent = msg;
       sResult.style.display = 'block';
+
+      // 통계 카드를 보정 후 값으로 갱신 (웨이포인트는 그대로 - 편집 상태 유지)
+      s1Points = afterParsed.points;
+      s1CumDist = s1ComputeCumDist(s1Points);
+      s1RenderStats();
     } catch (err) {
       showSError(t('s1ErrFailed') + err.message);
       sRunBtn.style.display = 'flex';
@@ -1401,16 +1669,22 @@ function handleFile(file) {
     pendingFormat = lower.endsWith('.tcx') ? 'tcx' : 'gpx';
 
     let base = file.name.replace(/\.(gpx|tcx)$/i, '');
-    easterEggMode = base.endsWith('@@');
-    if (easterEggMode) base = base.slice(0, -2);
 
     fileNameEl.textContent = file.name;
     fileBadge.style.display = 'flex';
     courseNameInput.value = base;
+    paramInput.value = '';
     runBtn.style.display = 'flex';
   };
   reader.readAsText(file);
 }
+
+paramInput.addEventListener('input', () => {
+  const newMode = paramInput.value.trim() === '오동도짱';
+  if (newMode === easterEggMode) return;
+  easterEggMode = newMode;
+  if (waypoints.length) renderWaypoints();
+});
 
 runBtn.addEventListener('click', () => {
   if (!pendingText) return;
@@ -1446,6 +1720,7 @@ function goHome() {
   editingWptIdx = null;
   easterEggMode = false;
   courseNameInput.value = '';
+  paramInput.value = '';
   threshSlid.value = 0;
   threshVal.textContent = '0 m';
   if (chart) { chart.destroy(); chart = null; }
@@ -1475,6 +1750,40 @@ document.getElementById('btnTcx').addEventListener('click', () => {
   const name = (courseNameInput.value || origBase).trim() || origBase;
   download(buildTcx(name), exportName(name) + '.tcx', 'application/vnd.garmin.tcx+xml');
 });
+
+document.getElementById('btnCsv').addEventListener('click', () => {
+  if (!waypoints.length) return;
+  const name = (courseNameInput.value || origBase).trim() || origBase;
+  const csv = buildWaypointsCsv();
+  // 엑셀에서 한글이 깨지지 않도록 BOM 포함
+  download('\uFEFF' + csv, exportName(name) + '_waypoints.csv', 'text/csv;charset=utf-8');
+});
+
+function csvEscape(s) {
+  const str = String(s);
+  return /[",\n]/.test(str) ? '"' + str.replace(/"/g, '""') + '"' : str;
+}
+
+function buildWaypointsCsv() {
+  const header = [t('csvName'), t('csvSegDist'), t('csvCumDist'), t('csvEle'), t('csvSegGain'), t('csvSegLoss')];
+  const rows = [header.map(csvEscape).join(',')];
+
+  let prevKm = 0, prevArrIdx = 0;
+  for (const w of waypoints) {
+    const seg = calcSegmentGainLoss(prevArrIdx, w.arrIdx);
+    const segKm = w.km - prevKm;
+    rows.push([
+      csvEscape(decodeXml(w.nameRaw)),
+      segKm.toFixed(2),
+      w.km.toFixed(2),
+      Math.round(w.ele),
+      Math.round(seg.gain),
+      Math.round(seg.loss)
+    ].join(','));
+    prevKm = w.km; prevArrIdx = w.arrIdx;
+  }
+  return rows.join('\r\n');
+}
 
 function exportName(name) {
   return sanitizeFilename(name);
