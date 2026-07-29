@@ -660,14 +660,14 @@
   /* ── 이스터에그: 5개 값 표 형태 (@@) ── */
   .wpt-legend {
     display:grid;
-    grid-template-columns:26px 1fr 44px 44px 38px 50px 40px;
-    gap:3px;
-    font-size:.6rem;
+    grid-template-columns:18px 1fr 30px 30px 28px 28px 28px 32px;
+    gap:2px;
+    font-size:.56rem;
     color:var(--dim);
     font-weight:700;
     text-transform:uppercase;
-    letter-spacing:.03em;
-    padding:0 6px 8px;
+    letter-spacing:.02em;
+    padding:0 4px 8px;
     border-bottom:1px solid var(--border);
     margin-bottom:2px;
   }
@@ -675,16 +675,21 @@
   .wpt-legend span:not(:nth-child(2)) { text-align:right; }
   .wpt-row.wpt-table {
     display:grid;
-    grid-template-columns:26px 1fr 44px 44px 38px 50px 40px;
-    gap:3px;
+    grid-template-columns:18px 1fr 30px 30px 28px 28px 28px 32px;
+    gap:2px;
     align-items:center;
-    padding:8px 6px;
-    font-size:.66rem;
+    padding:8px 4px;
+    font-size:.7rem;
   }
-  .wpt-row.wpt-table .wpt-num { text-align:right; font-weight:700; font-variant-numeric:tabular-nums; }
-  .wpt-row.wpt-table .wpt-ele-pair { text-align:right; font-variant-numeric:tabular-nums; line-height:1.15; }
-  .wpt-row.wpt-table .wpt-ele-pair .g { color:var(--gain); display:block; }
-  .wpt-row.wpt-table .wpt-ele-pair .l { color:var(--loss); display:block; }
+  .wpt-row.wpt-table .wpt-num,
+  .wpt-row.wpt-table .wpt-gain,
+  .wpt-row.wpt-table .wpt-loss {
+    text-align:right;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  .wpt-row.wpt-table .wpt-gain { color:var(--gain); }
+  .wpt-row.wpt-table .wpt-loss { color:var(--loss); }
 
   .wpt-actions { display:flex; gap:2px; justify-content:flex-end; }
   .wpt-actions button {
@@ -765,7 +770,7 @@
 
   .wpt-head-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 4px; }
   .wpt-head-row h2 { margin-bottom:0 !important; }
-  #s1ClimbBtn {
+  #s1ClimbBtn, #climbBtn {
     background:var(--card);
     border:1px solid var(--border);
     border-radius:8px;
@@ -779,7 +784,7 @@
     flex-shrink:0;
   }
 
-  #s1ClimbModalOverlay {
+  #s1ClimbModalOverlay, #climbModalOverlay {
     display:none;
     position:fixed;
     inset:0;
@@ -789,8 +794,8 @@
     justify-content:center;
     padding:0;
   }
-  #s1ClimbModalOverlay.open { display:flex; }
-  #s1ClimbModal {
+  #s1ClimbModalOverlay.open, #climbModalOverlay.open { display:flex; }
+  #s1ClimbModal, #climbModal {
     background:var(--surface);
     border:1px solid var(--border);
     border-radius:16px 16px 0 0;
@@ -800,7 +805,7 @@
     max-height:80vh;
     overflow-y:auto;
   }
-  #s1ClimbModal h2 { font-size:1rem; margin-bottom:14px; }
+  #s1ClimbModal h2, #climbModal h2 { font-size:1rem; margin-bottom:14px; }
   .climb-item {
     display:flex;
     align-items:center;
@@ -835,7 +840,7 @@
     font-family:inherit;
   }
   .climb-item button:disabled { opacity:.5; cursor:default; }
-  #s1ClimbCloseBtn {
+  #s1ClimbCloseBtn, #climbCloseBtn {
     width:100%;
     background:var(--card);
     border:1px solid var(--border);
@@ -879,7 +884,7 @@
     #courseNameBar { flex-direction:column; align-items:stretch; gap:6px; }
     #paramInput { flex:1 1 auto; }
     .wpt-row { grid-template-columns:30px 1fr 60px 54px 46px; font-size:.82rem; }
-    .wpt-legend, .wpt-row.wpt-table { grid-template-columns:24px 1fr 40px 40px 34px 46px 38px; }
+    .wpt-legend, .wpt-row.wpt-table { grid-template-columns:16px 1fr 28px 28px 26px 26px 26px 28px; font-size:.64rem; }
     .sub { padding-left:0; }
   }
 </style>
@@ -891,7 +896,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.0</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.1</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1135,8 +1140,20 @@
 
 <!-- Waypoints -->
 <div id="wptWrap">
-  <h2 data-i18n="wptTitle">웨이포인트</h2>
+  <div class="wpt-head-row">
+    <h2 data-i18n="wptTitle">웨이포인트</h2>
+    <button type="button" id="climbBtn" data-i18n="climbDetectBtn">⛰️ 오르막 자동 감지</button>
+  </div>
   <div id="wptList"></div>
+</div>
+
+<!-- 오르막 감지 결과 팝업 -->
+<div id="climbModalOverlay">
+  <div id="climbModal">
+    <h2 data-i18n="climbModalTitle">감지된 오르막</h2>
+    <div id="climbList"></div>
+    <button type="button" id="climbCloseBtn" data-i18n="climbModalClose">닫기</button>
+  </div>
 </div>
 
 <!-- Threshold -->
@@ -1173,7 +1190,7 @@
 
 </main>
 
-<footer id="footerText">v3.0 (2026.07.28) · Made by 오동도</footer>
+<footer id="footerText">v3.1 (2026.07.29) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1249,7 +1266,7 @@ const I18N = {
     errNoTrack:'트랙포인트 또는 고도 데이터(ele)가 없는 파일입니다.',
     errNoOriginalElevation:'복원할 원본 고도 데이터가 없습니다. 작업을 중단합니다.',
     errIllegalWptChar:'이 이름에 사용할 수 없는 문자가 포함되어 있습니다.',
-    wptColName:'이름', wptColSeg:'구간', wptColCum:'누적', wptColEle:'해발', wptColUpDown:'구간±',
+    wptColName:'이름', wptColSeg:'구간(km)', wptColCum:'누적(km)', wptColEle:'해발(m)', wptColGain:'↑(m)', wptColLoss:'↓(m)',
     errProcess:'파일 처리 중 오류가 발생했습니다: '
   },
   en: {
@@ -1321,7 +1338,7 @@ const I18N = {
     errNoTrack:'This file has no trackpoints or elevation (ele) data.',
     errNoOriginalElevation:'No original elevation data to restore. Stopping.',
     errIllegalWptChar:'This name contains a character that can\'t be used.',
-    wptColName:'Name', wptColSeg:'Seg', wptColCum:'Cum', wptColEle:'Elev', wptColUpDown:'Seg ±',
+    wptColName:'Name', wptColSeg:'Seg(km)', wptColCum:'Cum(km)', wptColEle:'Elev(m)', wptColGain:'↑(m)', wptColLoss:'↓(m)',
     errProcess:'An error occurred while processing the file: '
   },
   ja: {
@@ -1393,7 +1410,7 @@ const I18N = {
     errNoTrack:'トラックポイントまたは標高(ele)データのないファイルです。',
     errNoOriginalElevation:'復元する元の標高データがありません。処理を中止します。',
     errIllegalWptChar:'この名前には使用できない文字が含まれています。',
-    wptColName:'名前', wptColSeg:'区間', wptColCum:'累積', wptColEle:'標高', wptColUpDown:'区間±',
+    wptColName:'名前', wptColSeg:'区間(km)', wptColCum:'累積(km)', wptColEle:'標高(m)', wptColGain:'↑(m)', wptColLoss:'↓(m)',
     errProcess:'ファイル処理中にエラーが発生しました: '
   }
 };
@@ -1413,7 +1430,7 @@ function applyLang() {
 }
 function renderFooter() {
   document.getElementById('footerText').textContent =
-    'v3.0 (2026.07.28) · Made by ' + t('authorName');
+    'v3.1 (2026.07.29) · Made by ' + t('authorName');
 }
 document.querySelectorAll('.lang-switch button').forEach(b =>
   b.addEventListener('click', () => { lang = b.dataset.lang; applyLang(); }));
@@ -1666,10 +1683,11 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
           <div class="wpt-row wpt-table" data-idx="${i}">
             <div class="wpt-ico">${wptIcon(w.type)}</div>
             <div class="wpt-name">${escapeHtml(w.name)}<small>${wptTypeLabel(w.type)}</small></div>
-            <div class="wpt-num">${fmtNum(segKm, 1)}km</div>
-            <div class="wpt-num">${fmtNum(w.km, 1)}km</div>
-            <div class="wpt-num">${fmtNum(Math.round(w.ele))}m</div>
-            <div class="wpt-ele-pair"><span class="g">↑${fmtNum(Math.round(seg.gain))}</span><span class="l">↓${fmtNum(Math.round(seg.loss))}</span></div>
+            <div class="wpt-num">${fmtNum(segKm, 1)}</div>
+            <div class="wpt-num">${fmtNum(w.km, 1)}</div>
+            <div class="wpt-num">${fmtNum(Math.round(w.ele))}</div>
+            <div class="wpt-gain">${fmtNum(Math.round(seg.gain))}</div>
+            <div class="wpt-loss">${fmtNum(Math.round(seg.loss))}</div>
             <div class="wpt-actions">
               <button type="button" class="wpt-edit-btn" data-idx="${i}" title="편집">✏️</button>
               <button type="button" class="wpt-del-btn" data-idx="${i}" title="삭제">🗑️</button>
@@ -1678,7 +1696,7 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
       }).join('');
       s1WptList.innerHTML = `
         <div class="wpt-legend">
-          <span></span><span data-i18n="wptColName">이름</span><span data-i18n="wptColSeg">구간</span><span data-i18n="wptColCum">누적</span><span data-i18n="wptColEle">해발</span><span data-i18n="wptColUpDown">구간±</span><span></span>
+          <span></span><span data-i18n="wptColName">이름</span><span data-i18n="wptColSeg">구간(km)</span><span data-i18n="wptColCum">누적(km)</span><span data-i18n="wptColEle">해발(m)</span><span data-i18n="wptColGain">↑(m)</span><span data-i18n="wptColLoss">↓(m)</span><span></span>
         </div>` + rowsHtml;
       applyLangToElement(s1WptList);
       s1WptWrap.style.display = 'block';
@@ -2559,6 +2577,99 @@ function calcSegmentGainLoss(fromIdx, toIdx) {
   return { gain, loss };
 }
 
+// ── 오르막 자동 감지 (ClimbPro 기준: 500m+, 3%+, 점수 1500+) ──
+function detectClimbs() {
+  const pts = points, cum = cumDist;
+  if (pts.length < 3) return [];
+  const WIN = 5;
+  const smoothed = pts.map((p, i) => {
+    let sum = 0, cnt = 0;
+    for (let j = Math.max(0, i - WIN); j <= Math.min(pts.length - 1, i + WIN); j++) { sum += pts[j].ele; cnt++; }
+    return sum / cnt;
+  });
+  const climbs = [];
+  let i = 0;
+  while (i < smoothed.length - 1) {
+    if (smoothed[i + 1] > smoothed[i]) {
+      let j = i;
+      while (j < smoothed.length - 1) {
+        if (smoothed[j + 1] > smoothed[j]) { j++; continue; }
+        let k = j;
+        while (k < smoothed.length - 1 && smoothed[k + 1] <= smoothed[k] && (cum[k] - cum[j]) < 300) k++;
+        if (k < smoothed.length - 1 && smoothed[k + 1] > smoothed[k]) { j = k; continue; }
+        break;
+      }
+      const startIdx = i, endIdx = j;
+      const lengthM = cum[endIdx] - cum[startIdx];
+      const elevGain = smoothed[endIdx] - smoothed[startIdx];
+      const grade = lengthM > 0 ? (elevGain / lengthM) * 100 : 0;
+      const score = lengthM * grade;
+      if (lengthM >= 500 && grade >= 3 && score >= 1500) {
+        let peakIdx = startIdx;
+        for (let m = startIdx; m <= endIdx; m++) if (pts[m].ele > pts[peakIdx].ele) peakIdx = m;
+        climbs.push({ startIdx, endIdx, peakIdx, startKm: cum[startIdx] / 1000, lengthM, grade, score, peakEle: pts[peakIdx].ele });
+      }
+      i = endIdx + 1;
+    } else i++;
+  }
+  return climbs;
+}
+function climbCategory(score) {
+  if (score > 64000) return { label: 'HC', color: '#7c2d12' };
+  if (score > 48000) return { label: 'Cat 1', color: '#dc2626' };
+  if (score > 32000) return { label: 'Cat 2', color: '#f97316' };
+  if (score > 16000) return { label: 'Cat 3', color: '#eab308' };
+  if (score > 8000)  return { label: 'Cat 4', color: '#22c55e' };
+  return { label: '-', color: '#5a7a9a' };
+}
+
+document.getElementById('climbBtn').addEventListener('click', () => {
+  if (!points.length) return;
+  const climbs = detectClimbs();
+  const climbListEl = document.getElementById('climbList');
+  if (!climbs.length) {
+    climbListEl.innerHTML = `<p style="color:var(--dim);font-size:.85rem;">${t('climbNone')}</p>`;
+  } else {
+    climbListEl.innerHTML = climbs.map((c, idx) => {
+      const cat = climbCategory(c.score);
+      return `
+        <div class="climb-item" data-idx="${idx}">
+          <div class="info">
+            ${fmtNum(c.startKm, 1)}km · ${fmtNum(c.lengthM / 1000, 1)}km · ${fmtNum(c.grade, 1)}%
+            <span class="cat" style="background:${cat.color};color:#fff;">${cat.label}</span>
+            <br><b>${Math.round(c.peakEle)}m</b>
+          </div>
+          <button type="button" class="climb-create-btn" data-idx="${idx}">${t('climbCreateBtn')}</button>
+        </div>`;
+    }).join('');
+    climbListEl._climbs = climbs;
+  }
+  document.getElementById('climbModalOverlay').classList.add('open');
+});
+document.getElementById('climbCloseBtn').addEventListener('click', () => document.getElementById('climbModalOverlay').classList.remove('open'));
+document.getElementById('climbModalOverlay').addEventListener('click', e => {
+  if (e.target.id === 'climbModalOverlay') e.target.classList.remove('open');
+});
+document.getElementById('climbList').addEventListener('click', e => {
+  const btn = e.target.closest('.climb-create-btn');
+  if (!btn) return;
+  const climbs = document.getElementById('climbList')._climbs || [];
+  const c = climbs[parseInt(btn.dataset.idx)];
+  if (!c) return;
+  const p = points[c.peakIdx];
+  waypoints.push({
+    latStr: String(p.lat), lonStr: String(p.lon),
+    secIdx: '0', ptIdx: c.peakIdx, arrIdx: c.peakIdx,
+    typeAttr: 'Summit', nameRaw: Math.round(p.ele) + 'm', noteRaw: '',
+    hadEle: true, eleStr: String(p.ele),
+    km: cumDist[c.peakIdx] / 1000, ele: p.ele
+  });
+  waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
+  renderWaypoints();
+  btn.disabled = true;
+  btn.textContent = t('climbCreated');
+});
+
 function renderWaypoints() {
   if (!waypoints.length) { wptWrap.style.display = 'none'; return; }
 
@@ -2576,10 +2687,11 @@ function renderWaypoints() {
         <div class="wpt-row wpt-table" data-idx="${i}">
           <div class="wpt-ico">${wptIcon(w.typeAttr)}</div>
           <div class="wpt-name">${escapeHtml(decodeXml(w.nameRaw))}<small>${wptTypeLabel(w.typeAttr)}</small></div>
-          <div class="wpt-num">${fmtNum(segKm, 1)}km</div>
-          <div class="wpt-num">${fmtNum(w.km, 1)}km</div>
-          <div class="wpt-num">${fmtNum(Math.round(w.ele))}m</div>
-          <div class="wpt-ele-pair"><span class="g">↑${fmtNum(Math.round(seg.gain))}</span><span class="l">↓${fmtNum(Math.round(seg.loss))}</span></div>
+          <div class="wpt-num">${fmtNum(segKm, 1)}</div>
+          <div class="wpt-num">${fmtNum(w.km, 1)}</div>
+          <div class="wpt-num">${fmtNum(Math.round(w.ele))}</div>
+          <div class="wpt-gain">${fmtNum(Math.round(seg.gain))}</div>
+          <div class="wpt-loss">${fmtNum(Math.round(seg.loss))}</div>
           <div class="wpt-actions">
             <button type="button" class="wpt-edit-btn" data-idx="${i}" title="편집">✏️</button>
             <button type="button" class="wpt-del-btn" data-idx="${i}" title="삭제">🗑️</button>
@@ -2588,7 +2700,7 @@ function renderWaypoints() {
     }).join('');
     wptList.innerHTML = `
       <div class="wpt-legend">
-        <span></span><span data-i18n="wptColName">이름</span><span data-i18n="wptColSeg">구간</span><span data-i18n="wptColCum">누적</span><span data-i18n="wptColEle">해발</span><span data-i18n="wptColUpDown">구간±</span><span></span>
+        <span></span><span data-i18n="wptColName">이름</span><span data-i18n="wptColSeg">구간(km)</span><span data-i18n="wptColCum">누적(km)</span><span data-i18n="wptColEle">해발(m)</span><span data-i18n="wptColGain">↑(m)</span><span data-i18n="wptColLoss">↓(m)</span><span></span>
       </div>` + rowsHtml;
     applyLangToElement(wptList);
     wptWrap.style.display = 'block';
