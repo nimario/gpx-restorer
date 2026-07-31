@@ -818,7 +818,21 @@
     max-height:80vh;
     overflow-y:auto;
   }
-  #s1ClimbModal h2, #climbModal h2 { font-size:1rem; margin-bottom:14px; }
+  #s1ClimbModal h2, #climbModal h2 { font-size:1rem; margin-bottom:0; }
+  .climb-modal-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+  #s1ClimbCreateAllBtn, #climbCreateAllBtn {
+    background:linear-gradient(135deg, #123a5c, #0e4e6e);
+    border:1px solid #2a6a95;
+    border-radius:8px;
+    color:#e8f4fc;
+    font-size:.78rem;
+    font-weight:700;
+    padding:7px 12px;
+    cursor:pointer;
+    font-family:inherit;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
   .climb-item {
     display:flex;
     align-items:center;
@@ -912,7 +926,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.2</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.3</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1048,7 +1062,10 @@
   <!-- 오르막 감지 결과 팝업 -->
   <div id="s1ClimbModalOverlay">
     <div id="s1ClimbModal">
-      <h2 data-i18n="climbModalTitle">감지된 오르막</h2>
+      <div class="climb-modal-head">
+        <h2 data-i18n="climbModalTitle">감지된 오르막</h2>
+        <button type="button" id="s1ClimbCreateAllBtn" data-i18n="climbCreateAllBtn">전체 생성</button>
+      </div>
       <div id="s1ClimbList"></div>
       <button type="button" id="s1ClimbCloseBtn" data-i18n="climbModalClose">닫기</button>
     </div>
@@ -1166,7 +1183,10 @@
 <!-- 오르막 감지 결과 팝업 -->
 <div id="climbModalOverlay">
   <div id="climbModal">
-    <h2 data-i18n="climbModalTitle">감지된 오르막</h2>
+    <div class="climb-modal-head">
+      <h2 data-i18n="climbModalTitle">감지된 오르막</h2>
+      <button type="button" id="climbCreateAllBtn" data-i18n="climbCreateAllBtn">전체 생성</button>
+    </div>
     <div id="climbList"></div>
     <button type="button" id="climbCloseBtn" data-i18n="climbModalClose">닫기</button>
   </div>
@@ -1206,7 +1226,7 @@
 
 </main>
 
-<footer id="footerText">v3.2 (2026.07.31) · Made by 오동도</footer>
+<footer id="footerText">v3.3 (2026.07.31) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1271,6 +1291,7 @@ const I18N = {
     climbNone:'감지된 오르막이 없습니다 (500m 이상, 평균 경사도 3% 이상 기준)',
     climbCreateBtn:'웨이포인트 생성',
     climbCreated:'생성됨',
+    climbCreateAllBtn:'전체 생성',
     chartTitle:'고도 프로파일 (복원된 원본 고도)',
     ttDist:'거리', ttEle:'고도',
     msgRestored:'🔧 원본 고도 <span class="ok">{n}개 복원</span>',
@@ -1343,6 +1364,7 @@ const I18N = {
     climbNone:'No climbs detected (500m+ length, 3%+ average grade)',
     climbCreateBtn:'Create Waypoint',
     climbCreated:'Created',
+    climbCreateAllBtn:'Create All',
     chartTitle:'Elevation Profile (restored original elevation)',
     ttDist:'Distance', ttEle:'Elevation',
     msgRestored:'🔧 Restored <span class="ok">{n} original elevations</span>',
@@ -1414,6 +1436,7 @@ const I18N = {
     climbNone:'検出された上り坂はありません(500m以上、平均勾配3%以上基準)',
     climbCreateBtn:'ウェイポイント作成',
     climbCreated:'作成済み',
+    climbCreateAllBtn:'全て作成',
     authorName:'Odongdo',
     chartTitle:'標高プロファイル (復元された元の標高)',
     ttDist:'距離', ttEle:'標高',
@@ -1446,7 +1469,7 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.2';
+const APP_VERSION = 'v3.3';
 const APP_DATE = '2026.07.31';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
@@ -1938,15 +1961,33 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
     btn.disabled = true;
     btn.textContent = t('climbCreated');
   });
+  document.getElementById('s1ClimbCreateAllBtn').addEventListener('click', () => {
+    const climbs = s1ClimbList._climbs || [];
+    s1ClimbList.querySelectorAll('.climb-create-btn').forEach(b => {
+      if (b.disabled) return;
+      const c = climbs[parseInt(b.dataset.idx)];
+      if (!c) return;
+      const p = s1Points[c.peakIdx];
+      s1Waypoints.push({
+        lat: p.lat, lon: p.lon, name: Math.round(p.ele) + 'm', type: 'Summit',
+        arrIdx: c.peakIdx, km: s1CumDist[c.peakIdx] / 1000, ele: p.ele
+      });
+      b.disabled = true;
+      b.textContent = t('climbCreated');
+    });
+    s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
+    s1RenderWaypoints();
+  });
 
   // ── GPX/TCX 재조립 (편집 반영, 클라이언트 사이드) ──
   function s1BuildGpx(name) {
     const esc = escapeHtml(name);
     let out = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="elevation-corrector-tool" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>' + esc + '</name></metadata>\n';
     for (const w of s1Waypoints) {
-      out += '<wpt lat="' + w.lat + '" lon="' + w.lon + '">';
+      const typeVal = w.type || 'Generic';
+      out += '<wpt lat="' + w.lat + '" lon="' + w.lon + '" type="' + escapeHtml(typeVal) + '">';
       if (w.name) out += '<name>' + escapeHtml(w.name) + '</name>';
-      if (w.type) out += '<type>' + escapeHtml(w.type) + '</type>';
+      out += '<type>' + escapeHtml(typeVal).toUpperCase() + '</type>';
       out += '</wpt>\n';
     }
     out += '<trk><name>' + esc + '</name><trkseg>\n';
@@ -2731,6 +2772,26 @@ document.getElementById('climbList').addEventListener('click', e => {
   renderWaypoints();
   btn.disabled = true;
   btn.textContent = t('climbCreated');
+});
+document.getElementById('climbCreateAllBtn').addEventListener('click', () => {
+  const climbs = document.getElementById('climbList')._climbs || [];
+  document.querySelectorAll('#climbList .climb-create-btn').forEach(b => {
+    if (b.disabled) return;
+    const c = climbs[parseInt(b.dataset.idx)];
+    if (!c) return;
+    const p = points[c.peakIdx];
+    waypoints.push({
+      latStr: String(p.lat), lonStr: String(p.lon),
+      secIdx: '0', ptIdx: c.peakIdx, arrIdx: c.peakIdx,
+      typeAttr: 'Summit', nameRaw: Math.round(p.ele) + 'm', noteRaw: '',
+      hadEle: true, eleStr: String(p.ele),
+      km: cumDist[c.peakIdx] / 1000, ele: p.ele
+    });
+    b.disabled = true;
+    b.textContent = t('climbCreated');
+  });
+  waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
+  renderWaypoints();
 });
 
 function renderWaypoints() {
