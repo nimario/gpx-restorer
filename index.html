@@ -660,9 +660,10 @@
   /* ── 이스터에그: 5개 값 표 형태 (@@) ── */
   .wpt-legend {
     display:grid;
-    grid-template-columns:18px 1fr 30px 30px 28px 28px 28px 32px;
-    gap:2px;
-    font-size:.56rem;
+    grid-template-columns:22px 64px 1fr 1fr 1fr 1fr 1fr 40px;
+    gap:3px;
+    min-width:0;
+    font-size:.6rem;
     color:var(--dim);
     font-weight:700;
     text-transform:uppercase;
@@ -671,15 +672,25 @@
     border-bottom:1px solid var(--border);
     margin-bottom:2px;
   }
+  .wpt-legend span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .wpt-legend span:nth-child(2) { text-align:left; }
   .wpt-legend span:not(:nth-child(2)) { text-align:right; }
   .wpt-row.wpt-table {
     display:grid;
-    grid-template-columns:18px 1fr 30px 30px 28px 28px 28px 32px;
-    gap:2px;
+    grid-template-columns:22px 64px 1fr 1fr 1fr 1fr 1fr 40px;
+    gap:3px;
+    min-width:0;
     align-items:center;
-    padding:8px 4px;
-    font-size:.7rem;
+    padding:10px 4px;
+    font-size:.86rem;
+  }
+  .wpt-row.wpt-table .wpt-name {
+    font-size:.92rem;
+    font-weight:800;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
   }
   .wpt-row.wpt-table .wpt-num,
   .wpt-row.wpt-table .wpt-gain,
@@ -687,6 +698,8 @@
     text-align:right;
     font-weight:700;
     font-variant-numeric:tabular-nums;
+    min-width:0;
+    overflow:hidden;
   }
   .wpt-row.wpt-table .wpt-gain { color:var(--gain); }
   .wpt-row.wpt-table .wpt-loss { color:var(--loss); }
@@ -884,7 +897,10 @@
     #courseNameBar { flex-direction:column; align-items:stretch; gap:6px; }
     #paramInput { flex:1 1 auto; }
     .wpt-row { grid-template-columns:30px 1fr 60px 54px 46px; font-size:.82rem; }
-    .wpt-legend, .wpt-row.wpt-table { grid-template-columns:16px 1fr 28px 28px 26px 26px 26px 28px; font-size:.64rem; }
+    .wpt-legend, .wpt-row.wpt-table { grid-template-columns:20px 56px 1fr 1fr 1fr 1fr 1fr 36px; gap:2px; }
+    .wpt-row.wpt-table { font-size:.78rem; padding:9px 3px; }
+    .wpt-row.wpt-table .wpt-name { font-size:.84rem; }
+    .wpt-legend { font-size:.54rem; }
     .sub { padding-left:0; }
   }
 </style>
@@ -896,7 +912,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.1</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.2</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1190,7 +1206,7 @@
 
 </main>
 
-<footer id="footerText">v3.1 (2026.07.29) · Made by 오동도</footer>
+<footer id="footerText">v3.2 (2026.07.31) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1428,10 +1444,17 @@ function applyLang() {
   renderFooter();
   if (lastResult) { renderRestoreInfo(); renderGainCompare(); }
 }
+
+// ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
+const APP_VERSION = 'v3.2';
+const APP_DATE = '2026.07.31';
 function renderFooter() {
+  document.querySelector('.ver').textContent = APP_VERSION;
   document.getElementById('footerText').textContent =
-    'v3.1 (2026.07.29) · Made by ' + t('authorName');
+    APP_VERSION + ' (' + APP_DATE + ') · Made by ' + t('authorName');
 }
+renderFooter(); // 최초 로드 시(언어 전환 없이도) 바로 반영
+
 document.querySelectorAll('.lang-switch button').forEach(b =>
   b.addEventListener('click', () => { lang = b.dataset.lang; applyLang(); }));
 
@@ -1586,9 +1609,10 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
       const lat = parseFloat((attrs.match(/lat="([^"]*)"/) || [])[1]);
       const lon = parseFloat((attrs.match(/lon="([^"]*)"/) || [])[1]);
       const nameM = inner.match(/<name>([\s\S]*?)<\/name>/);
+      const typeAttrRaw = (attrs.match(/type="([^"]*)"/) || [])[1];
       const typeM = inner.match(/<type>([\s\S]*?)<\/type>/);
       if (isNaN(lat) || isNaN(lon)) continue;
-      waypoints.push({ lat, lon, name: nameM ? decodeXml(nameM[1].trim()) : '', type: typeM ? decodeXml(typeM[1].trim()) : 'Generic' });
+      waypoints.push({ lat, lon, name: nameM ? decodeXml(nameM[1].trim()) : '', type: typeAttrRaw || (typeM ? decodeXml(typeM[1].trim()) : '') || 'Generic' });
     }
     return { points, waypoints };
   }
@@ -1682,7 +1706,7 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
         return `
           <div class="wpt-row wpt-table" data-idx="${i}">
             <div class="wpt-ico">${wptIcon(w.type)}</div>
-            <div class="wpt-name">${escapeHtml(w.name)}<small>${wptTypeLabel(w.type)}</small></div>
+            <div class="wpt-name">${escapeHtml(w.name)}</div>
             <div class="wpt-num">${fmtNum(segKm, 1)}</div>
             <div class="wpt-num">${fmtNum(w.km, 1)}</div>
             <div class="wpt-num">${fmtNum(Math.round(w.ele))}</div>
@@ -1810,6 +1834,18 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
   }
 
   // ── 오르막 자동 감지 (ClimbPro 기준: 500m+, 3%+, 점수 1500+) ──
+  function findQualifyingSuffix(smoothed, cum, s0, e0) {
+    for (let s = s0; s < e0; s++) {
+      const lengthM = cum[e0] - cum[s];
+      if (lengthM < 500) break;
+      const elevGain = smoothed[e0] - smoothed[s];
+      const grade = lengthM > 0 ? (elevGain / lengthM) * 100 : 0;
+      const score = lengthM * grade;
+      if (grade >= 3 && score >= 1500) return { startIdx: s, endIdx: e0, lengthM, grade, score };
+    }
+    return null;
+  }
+
   function s1DetectClimbs() {
     const pts = s1Points, cum = s1CumDist;
     if (pts.length < 3) return [];
@@ -1831,12 +1867,19 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
           if (k < smoothed.length - 1 && smoothed[k + 1] > smoothed[k]) { j = k; continue; }
           break;
         }
-        const startIdx = i, endIdx = j;
-        const lengthM = cum[endIdx] - cum[startIdx];
-        const elevGain = smoothed[endIdx] - smoothed[startIdx];
-        const grade = lengthM > 0 ? (elevGain / lengthM) * 100 : 0;
-        const score = lengthM * grade;
-        if (lengthM >= 500 && grade >= 3 && score >= 1500) {
+        let startIdx = i, endIdx = j;
+        let lengthM = cum[endIdx] - cum[startIdx];
+        let elevGain = smoothed[endIdx] - smoothed[startIdx];
+        let grade = lengthM > 0 ? (elevGain / lengthM) * 100 : 0;
+        let score = lengthM * grade;
+        let qualifies = lengthM >= 500 && grade >= 3 && score >= 1500;
+        // 전체 평균으로 탈락했다면, 완만하게 시작해 뒤로 갈수록 가팔라지는 구간일 수 있으니
+        // 뒷부분만 잘라서 재검사 (앞쪽 완만한 구간이 평균을 희석시켰을 가능성 대응)
+        if (!qualifies && lengthM >= 500) {
+          const suffix = findQualifyingSuffix(smoothed, cum, startIdx, endIdx);
+          if (suffix) { startIdx = suffix.startIdx; lengthM = suffix.lengthM; grade = suffix.grade; score = suffix.score; qualifies = true; }
+        }
+        if (qualifies) {
           let peakIdx = startIdx;
           for (let m = startIdx; m <= endIdx; m++) if (pts[m].ele > pts[peakIdx].ele) peakIdx = m;
           climbs.push({ startIdx, endIdx, peakIdx, startKm: cum[startIdx] / 1000, lengthM, grade, score, peakEle: pts[peakIdx].ele });
@@ -1899,7 +1942,7 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
   // ── GPX/TCX 재조립 (편집 반영, 클라이언트 사이드) ──
   function s1BuildGpx(name) {
     const esc = escapeHtml(name);
-    let out = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="gpx-restorer-tab1" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>' + esc + '</name></metadata>\n';
+    let out = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="elevation-corrector-tool" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>' + esc + '</name></metadata>\n';
     for (const w of s1Waypoints) {
       out += '<wpt lat="' + w.lat + '" lon="' + w.lon + '">';
       if (w.name) out += '<name>' + escapeHtml(w.name) + '</name>';
@@ -1919,7 +1962,7 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
     const esc = escapeHtml(name);
     const speedMs = 20 * 1000 / 3600;
     const startMs = Date.now();
-    let out = '<?xml version="1.0" encoding="utf-8" standalone="no"?>\n<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">\n<Folders />\n<Courses>\n<Course>\n<Name>' + esc + '</Name>\n<Lap>\n';
+    let out = '<?xml version="1.0" encoding="utf-8" standalone="no"?>\n<!-- elevation-corrector-tool -->\n<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">\n<Folders />\n<Courses>\n<Course>\n<Name>' + esc + '</Name>\n<Lap>\n';
     out += '<TotalTimeSeconds>' + Math.round((s1CumDist[s1CumDist.length - 1] || 0) / speedMs) + '</TotalTimeSeconds>\n<DistanceMeters>' + (s1CumDist[s1CumDist.length - 1] || 0).toFixed(2) + '</DistanceMeters>\n<Intensity>Active</Intensity>\n</Lap>\n<Track>\n';
     for (let i = 0; i < s1Points.length; i++) {
       const p = s1Points[i];
@@ -2343,7 +2386,9 @@ function parseGpxInput(text) {
     const lonStr = (attrs.match(/lon="([^"]*)"/) || [])[1];
     const secIdx = (attrs.match(/sectionIndex="([^"]*)"/) || [])[1] || '0';
     const ptIdx  = (attrs.match(/pointIndex="([^"]*)"/)  || [])[1];
-    const typeAttr = (attrs.match(/type="([^"]*)"/) || [])[1] || 'Generic';
+    const typeAttrRaw = (attrs.match(/type="([^"]*)"/) || [])[1];
+    const typeElM = inner.match(/<type>([\s\S]*?)<\/type>/);
+    const typeAttr = typeAttrRaw || (typeElM ? decodeXml(typeElM[1].trim()) : '') || 'Generic';
     const nameRaw  = (inner.match(/<name>([\s\S]*?)<\/name>/) || [])[1] || '';
     const noteRaw  = (inner.match(/<note>([\s\S]*?)<\/note>/) || [])[1] || '';
     const eleM     = inner.match(/<ele>([^<]*)<\/ele>/);
@@ -2578,6 +2623,17 @@ function calcSegmentGainLoss(fromIdx, toIdx) {
 }
 
 // ── 오르막 자동 감지 (ClimbPro 기준: 500m+, 3%+, 점수 1500+) ──
+function findQualifyingSuffix(smoothed, cum, s0, e0) {
+  for (let s = s0; s < e0; s++) {
+    const lengthM = cum[e0] - cum[s];
+    if (lengthM < 500) break;
+    const elevGain = smoothed[e0] - smoothed[s];
+    const grade = lengthM > 0 ? (elevGain / lengthM) * 100 : 0;
+    const score = lengthM * grade;
+    if (grade >= 3 && score >= 1500) return { startIdx: s, endIdx: e0, lengthM, grade, score };
+  }
+  return null;
+}
 function detectClimbs() {
   const pts = points, cum = cumDist;
   if (pts.length < 3) return [];
@@ -2599,12 +2655,19 @@ function detectClimbs() {
         if (k < smoothed.length - 1 && smoothed[k + 1] > smoothed[k]) { j = k; continue; }
         break;
       }
-      const startIdx = i, endIdx = j;
-      const lengthM = cum[endIdx] - cum[startIdx];
-      const elevGain = smoothed[endIdx] - smoothed[startIdx];
-      const grade = lengthM > 0 ? (elevGain / lengthM) * 100 : 0;
-      const score = lengthM * grade;
-      if (lengthM >= 500 && grade >= 3 && score >= 1500) {
+      let startIdx = i, endIdx = j;
+      let lengthM = cum[endIdx] - cum[startIdx];
+      let elevGain = smoothed[endIdx] - smoothed[startIdx];
+      let grade = lengthM > 0 ? (elevGain / lengthM) * 100 : 0;
+      let score = lengthM * grade;
+      let qualifies = lengthM >= 500 && grade >= 3 && score >= 1500;
+      // 전체 평균으로 탈락했다면, 완만하게 시작해 뒤로 갈수록 가팔라지는 구간일 수 있으니
+      // 뒷부분만 잘라서 재검사 (앞쪽 완만한 구간이 평균을 희석시켰을 가능성 대응)
+      if (!qualifies && lengthM >= 500) {
+        const suffix = findQualifyingSuffix(smoothed, cum, startIdx, endIdx);
+        if (suffix) { startIdx = suffix.startIdx; lengthM = suffix.lengthM; grade = suffix.grade; score = suffix.score; qualifies = true; }
+      }
+      if (qualifies) {
         let peakIdx = startIdx;
         for (let m = startIdx; m <= endIdx; m++) if (pts[m].ele > pts[peakIdx].ele) peakIdx = m;
         climbs.push({ startIdx, endIdx, peakIdx, startKm: cum[startIdx] / 1000, lengthM, grade, score, peakEle: pts[peakIdx].ele });
@@ -2686,7 +2749,7 @@ function renderWaypoints() {
       return `
         <div class="wpt-row wpt-table" data-idx="${i}">
           <div class="wpt-ico">${wptIcon(w.typeAttr)}</div>
-          <div class="wpt-name">${escapeHtml(decodeXml(w.nameRaw))}<small>${wptTypeLabel(w.typeAttr)}</small></div>
+          <div class="wpt-name">${escapeHtml(decodeXml(w.nameRaw))}</div>
           <div class="wpt-num">${fmtNum(segKm, 1)}</div>
           <div class="wpt-num">${fmtNum(w.km, 1)}</div>
           <div class="wpt-num">${fmtNum(Math.round(w.ele))}</div>
