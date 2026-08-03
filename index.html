@@ -1954,15 +1954,17 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
   async function fetchPlaceName(lat, lon) {
     try {
       const url = backendUrl();
-      if (!url || url.includes('YOUR-SUBDOMAIN')) return null;
+      if (!url || url.includes('YOUR-SUBDOMAIN')) { console.log('[지명조회]', lat, lon, '-> 백엔드 URL 미설정'); return null; }
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 4000);
       const res = await fetch(`${url}/api/placename?lat=${lat}&lon=${lon}`, { signal: controller.signal });
       clearTimeout(timer);
-      if (!res.ok) return null;
+      if (!res.ok) { console.log('[지명조회]', lat, lon, '-> HTTP', res.status); return null; }
       const data = await res.json();
+      console.log('[지명조회]', lat, lon, '->', data.name, '|', data.debug);
       return data.name || null;
     } catch (e) {
+      console.log('[지명조회]', lat, lon, '-> 예외:', e.message);
       return null; // 타임아웃/오류 시 조용히 폴백
     }
   }
@@ -2804,15 +2806,17 @@ function hasCoordCollisionT2(lat, lon) {
 async function fetchPlaceNameT2(lat, lon) {
   try {
     const url = STRAVA_BACKEND_URL.replace(/\/+$/, '');
-    if (!url || url.includes('YOUR-SUBDOMAIN')) return null;
+    if (!url || url.includes('YOUR-SUBDOMAIN')) { console.log('[지명조회]', lat, lon, '-> 백엔드 URL 미설정'); return null; }
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 4000);
     const res = await fetch(`${url}/api/placename?lat=${lat}&lon=${lon}`, { signal: controller.signal });
     clearTimeout(timer);
-    if (!res.ok) return null;
+    if (!res.ok) { console.log('[지명조회]', lat, lon, '-> HTTP', res.status); return null; }
     const data = await res.json();
+    console.log('[지명조회]', lat, lon, '->', data.name, '|', data.debug);
     return data.name || null;
   } catch (e) {
+    console.log('[지명조회]', lat, lon, '-> 예외:', e.message);
     return null;
   }
 }
