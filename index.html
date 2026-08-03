@@ -660,8 +660,8 @@
   /* ── 이스터에그: 5개 값 표 형태 (@@) ── */
   .wpt-legend {
     display:grid;
-    grid-template-columns:22px 64px 1fr 1fr 1fr 1fr 1fr 40px;
-    gap:3px;
+    grid-template-columns:20px 1fr 40px 46px 38px 38px 38px 40px;
+    gap:2px;
     min-width:0;
     font-size:.6rem;
     color:var(--dim);
@@ -677,8 +677,8 @@
   .wpt-legend span:not(:nth-child(2)) { text-align:right; }
   .wpt-row.wpt-table {
     display:grid;
-    grid-template-columns:22px 64px 1fr 1fr 1fr 1fr 1fr 40px;
-    gap:3px;
+    grid-template-columns:20px 1fr 40px 46px 38px 38px 38px 40px;
+    gap:2px;
     min-width:0;
     align-items:center;
     padding:10px 4px;
@@ -911,7 +911,7 @@
     #courseNameBar { flex-direction:column; align-items:stretch; gap:6px; }
     #paramInput { flex:1 1 auto; }
     .wpt-row { grid-template-columns:30px 1fr 60px 54px 46px; font-size:.82rem; }
-    .wpt-legend, .wpt-row.wpt-table { grid-template-columns:20px 56px 1fr 1fr 1fr 1fr 1fr 36px; gap:2px; }
+    .wpt-legend, .wpt-row.wpt-table { grid-template-columns:18px 1fr 38px 44px 36px 36px 36px 36px; gap:2px; }
     .wpt-row.wpt-table { font-size:.78rem; padding:9px 3px; }
     .wpt-row.wpt-table .wpt-name { font-size:.84rem; }
     .wpt-legend { font-size:.54rem; }
@@ -926,7 +926,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.3</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.4</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1041,17 +1041,16 @@
     <input type="text" id="stravaCourseName" autocomplete="off" spellcheck="false">
     <label for="paramInputS1" data-i18n="paramLabel">매개변수</label>
     <input type="text" id="paramInputS1" autocomplete="off" spellcheck="false">
-    <label for="stravaFormatSelect" data-i18n="s1FormatLabel">내보낼 형식</label>
-    <select id="stravaFormatSelect">
-      <option value="gpx">GPX</option>
-      <option value="tcx">TCX</option>
-    </select>
   </div>
 
   <div id="s1DownloadBar">
-    <button type="button" class="export-btn" id="stravaDownloadBtn">
+    <button type="button" class="export-btn" id="s1BtnGpx">
       <span class="ico">⬇️</span>
-      <span class="txt"><span data-i18n="s1DownloadBtn">다운로드</span></span>
+      <span class="txt"><span data-i18n="exportGpx">GPX 내보내기</span></span>
+    </button>
+    <button type="button" class="export-btn" id="s1BtnTcx">
+      <span class="ico">⬇️</span>
+      <span class="txt"><span data-i18n="exportTcx">TCX 내보내기</span></span>
     </button>
     <button type="button" class="export-btn" id="s1BtnCsv">
       <span class="ico">📊</span>
@@ -1226,7 +1225,7 @@
 
 </main>
 
-<footer id="footerText">v3.3 (2026.07.31) · Made by 오동도</footer>
+<footer id="footerText">v3.4 (2026.08.03) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1291,6 +1290,7 @@ const I18N = {
     climbNone:'감지된 오르막이 없습니다 (500m 이상, 평균 경사도 3% 이상 기준)',
     climbCreateBtn:'웨이포인트 생성',
     climbCreated:'생성됨',
+    climbSkipped:'이미 있음',
     climbCreateAllBtn:'전체 생성',
     chartTitle:'고도 프로파일 (복원된 원본 고도)',
     ttDist:'거리', ttEle:'고도',
@@ -1364,6 +1364,7 @@ const I18N = {
     climbNone:'No climbs detected (500m+ length, 3%+ average grade)',
     climbCreateBtn:'Create Waypoint',
     climbCreated:'Created',
+    climbSkipped:'Already exists',
     climbCreateAllBtn:'Create All',
     chartTitle:'Elevation Profile (restored original elevation)',
     ttDist:'Distance', ttEle:'Elevation',
@@ -1436,6 +1437,7 @@ const I18N = {
     climbNone:'検出された上り坂はありません(500m以上、平均勾配3%以上基準)',
     climbCreateBtn:'ウェイポイント作成',
     climbCreated:'作成済み',
+    climbSkipped:'既に存在',
     climbCreateAllBtn:'全て作成',
     authorName:'Odongdo',
     chartTitle:'標高プロファイル (復元された元の標高)',
@@ -1469,8 +1471,8 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.3';
-const APP_DATE = '2026.07.31';
+const APP_VERSION = 'v3.4';
+const APP_DATE = '2026.08.03';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
   document.getElementById('footerText').textContent =
@@ -1578,14 +1580,14 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
   const sFileName      = document.getElementById('stravaFileName');
   const sCourseName    = document.getElementById('stravaCourseName');
   const s1Param        = document.getElementById('paramInputS1');
-  const sFormatSelect  = document.getElementById('stravaFormatSelect');
   const sOptionsBar    = document.getElementById('stravaOptionsBar');
   const sRunBtn        = document.getElementById('stravaRunBtn');
   const sProgress      = document.getElementById('stravaProgress');
   const sProgressText  = document.getElementById('stravaProgressText');
   const sResult        = document.getElementById('stravaResult');
   const sResultText    = document.getElementById('stravaResultText');
-  const sDownloadBtn   = document.getElementById('stravaDownloadBtn');
+  const s1BtnGpx       = document.getElementById('s1BtnGpx');
+  const s1BtnTcx       = document.getElementById('s1BtnTcx');
   const sDownloadBar   = document.getElementById('s1DownloadBar');
   const s1CsvBtn       = document.getElementById('s1BtnCsv');
   const s1WptList      = document.getElementById('s1WptList');
@@ -1945,36 +1947,77 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
   });
   s1ClimbCloseBtn.addEventListener('click', () => s1ClimbOverlay.classList.remove('open'));
   s1ClimbOverlay.addEventListener('click', e => { if (e.target === s1ClimbOverlay) s1ClimbOverlay.classList.remove('open'); });
-  s1ClimbList.addEventListener('click', e => {
+  function hasCoordCollision(lat, lon) {
+    return s1Waypoints.some(w => Math.abs(w.lat - lat) < 1e-6 && Math.abs(w.lon - lon) < 1e-6);
+  }
+
+  async function fetchPlaceName(lat, lon) {
+    try {
+      const url = backendUrl();
+      if (!url || url.includes('YOUR-SUBDOMAIN')) return null;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(`${url}/api/placename?lat=${lat}&lon=${lon}`, { signal: controller.signal });
+      clearTimeout(timer);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.name || null;
+    } catch (e) {
+      return null; // 타임아웃/오류 시 조용히 폴백
+    }
+  }
+
+  async function s1TryCreateClimbWaypoint(c) {
+    const p = s1Points[c.peakIdx];
+    if (hasCoordCollision(p.lat, p.lon)) return 'collision';
+    const placeName = await fetchPlaceName(p.lat, p.lon);
+    s1Waypoints.push({
+      lat: p.lat, lon: p.lon, name: placeName || (Math.round(p.ele) + 'm'), type: 'Summit',
+      arrIdx: c.peakIdx, km: s1CumDist[c.peakIdx] / 1000, ele: p.ele
+    });
+    return 'created';
+  }
+
+  s1ClimbList.addEventListener('click', async e => {
     const btn = e.target.closest('.climb-create-btn');
     if (!btn) return;
     const climbs = s1ClimbList._climbs || [];
     const c = climbs[parseInt(btn.dataset.idx)];
     if (!c) return;
-    const p = s1Points[c.peakIdx];
-    s1Waypoints.push({
-      lat: p.lat, lon: p.lon, name: Math.round(p.ele) + 'm', type: 'Summit',
-      arrIdx: c.peakIdx, km: s1CumDist[c.peakIdx] / 1000, ele: p.ele
-    });
+    btn.disabled = true;
+    btn.textContent = '...';
+    const result = await s1TryCreateClimbWaypoint(c);
     s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
     s1RenderWaypoints();
-    btn.disabled = true;
-    btn.textContent = t('climbCreated');
+    btn.textContent = result === 'collision' ? t('climbSkipped') : t('climbCreated');
   });
-  document.getElementById('s1ClimbCreateAllBtn').addEventListener('click', () => {
+  document.getElementById('s1ClimbCreateAllBtn').addEventListener('click', async () => {
     const climbs = s1ClimbList._climbs || [];
-    s1ClimbList.querySelectorAll('.climb-create-btn').forEach(b => {
-      if (b.disabled) return;
+    const btns = Array.from(s1ClimbList.querySelectorAll('.climb-create-btn')).filter(b => !b.disabled);
+    btns.forEach(b => { b.disabled = true; b.textContent = '...'; });
+
+    // 1단계: 충돌체크는 동기로 먼저 끝냄 (빠름, 순서 의존적)
+    const jobs = [];
+    for (const b of btns) {
       const c = climbs[parseInt(b.dataset.idx)];
-      if (!c) return;
+      if (!c) continue;
       const p = s1Points[c.peakIdx];
+      if (hasCoordCollision(p.lat, p.lon)) {
+        b.textContent = t('climbSkipped');
+      } else {
+        jobs.push({ b, c, p });
+      }
+    }
+    // 2단계: 지명 조회는 전부 동시에 (병렬) - 순차 대기 방지
+    await Promise.all(jobs.map(async job => {
+      const placeName = await fetchPlaceName(job.p.lat, job.p.lon);
       s1Waypoints.push({
-        lat: p.lat, lon: p.lon, name: Math.round(p.ele) + 'm', type: 'Summit',
-        arrIdx: c.peakIdx, km: s1CumDist[c.peakIdx] / 1000, ele: p.ele
+        lat: job.p.lat, lon: job.p.lon, name: placeName || (Math.round(job.p.ele) + 'm'), type: 'Summit',
+        arrIdx: job.c.peakIdx, km: s1CumDist[job.c.peakIdx] / 1000, ele: job.p.ele
       });
-      b.disabled = true;
-      b.textContent = t('climbCreated');
-    });
+      job.b.textContent = t('climbCreated');
+    }));
+
     s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
     s1RenderWaypoints();
   });
@@ -2114,11 +2157,10 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
     }
   });
 
-  // ── 다운로드 (이 시점에 이름/형식 반영해서 클라이언트에서 조립) ──
-  sDownloadBtn.addEventListener('click', () => {
+  // ── 다운로드 (이 시점에 이름 반영해서 클라이언트에서 조립) ──
+  function s1Download(format) {
     if (!s1Points.length) return;
     const name = (sCourseName.value || 'course').trim() || 'course';
-    const format = sFormatSelect.value;
     const content = format === 'tcx' ? s1BuildTcx(name) : s1BuildGpx(name);
     const finalName = sanitizeFilename(name) || 'course';
     const mime = format === 'tcx' ? 'application/vnd.garmin.tcx+xml' : 'application/gpx+xml';
@@ -2129,7 +2171,9 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-  });
+  }
+  s1BtnGpx.addEventListener('click', () => s1Download('gpx'));
+  s1BtnTcx.addEventListener('click', () => s1Download('tcx'));
 
   // ── CSV 내보내기 ──
   s1CsvBtn.addEventListener('click', () => {
@@ -2754,42 +2798,77 @@ document.getElementById('climbCloseBtn').addEventListener('click', () => documen
 document.getElementById('climbModalOverlay').addEventListener('click', e => {
   if (e.target.id === 'climbModalOverlay') e.target.classList.remove('open');
 });
-document.getElementById('climbList').addEventListener('click', e => {
+function hasCoordCollisionT2(lat, lon) {
+  return waypoints.some(w => Math.abs(parseFloat(w.latStr) - lat) < 1e-6 && Math.abs(parseFloat(w.lonStr) - lon) < 1e-6);
+}
+async function fetchPlaceNameT2(lat, lon) {
+  try {
+    const url = STRAVA_BACKEND_URL.replace(/\/+$/, '');
+    if (!url || url.includes('YOUR-SUBDOMAIN')) return null;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(`${url}/api/placename?lat=${lat}&lon=${lon}`, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.name || null;
+  } catch (e) {
+    return null;
+  }
+}
+document.getElementById('climbList').addEventListener('click', async e => {
   const btn = e.target.closest('.climb-create-btn');
   if (!btn) return;
   const climbs = document.getElementById('climbList')._climbs || [];
   const c = climbs[parseInt(btn.dataset.idx)];
   if (!c) return;
+  btn.disabled = true;
+  btn.textContent = '...';
   const p = points[c.peakIdx];
+  if (hasCoordCollisionT2(p.lat, p.lon)) {
+    btn.textContent = t('climbSkipped');
+    return;
+  }
+  const placeName = await fetchPlaceNameT2(p.lat, p.lon);
   waypoints.push({
     latStr: String(p.lat), lonStr: String(p.lon),
     secIdx: '0', ptIdx: c.peakIdx, arrIdx: c.peakIdx,
-    typeAttr: 'Summit', nameRaw: Math.round(p.ele) + 'm', noteRaw: '',
+    typeAttr: 'Summit', nameRaw: placeName || (Math.round(p.ele) + 'm'), noteRaw: '',
     hadEle: true, eleStr: String(p.ele),
     km: cumDist[c.peakIdx] / 1000, ele: p.ele
   });
   waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
   renderWaypoints();
-  btn.disabled = true;
   btn.textContent = t('climbCreated');
 });
-document.getElementById('climbCreateAllBtn').addEventListener('click', () => {
+document.getElementById('climbCreateAllBtn').addEventListener('click', async () => {
   const climbs = document.getElementById('climbList')._climbs || [];
-  document.querySelectorAll('#climbList .climb-create-btn').forEach(b => {
-    if (b.disabled) return;
+  const btns = Array.from(document.querySelectorAll('#climbList .climb-create-btn')).filter(b => !b.disabled);
+  btns.forEach(b => { b.disabled = true; b.textContent = '...'; });
+
+  const jobs = [];
+  for (const b of btns) {
     const c = climbs[parseInt(b.dataset.idx)];
-    if (!c) return;
+    if (!c) continue;
     const p = points[c.peakIdx];
+    if (hasCoordCollisionT2(p.lat, p.lon)) {
+      b.textContent = t('climbSkipped');
+    } else {
+      jobs.push({ b, c, p });
+    }
+  }
+  await Promise.all(jobs.map(async job => {
+    const placeName = await fetchPlaceNameT2(job.p.lat, job.p.lon);
     waypoints.push({
-      latStr: String(p.lat), lonStr: String(p.lon),
-      secIdx: '0', ptIdx: c.peakIdx, arrIdx: c.peakIdx,
-      typeAttr: 'Summit', nameRaw: Math.round(p.ele) + 'm', noteRaw: '',
-      hadEle: true, eleStr: String(p.ele),
-      km: cumDist[c.peakIdx] / 1000, ele: p.ele
+      latStr: String(job.p.lat), lonStr: String(job.p.lon),
+      secIdx: '0', ptIdx: job.c.peakIdx, arrIdx: job.c.peakIdx,
+      typeAttr: 'Summit', nameRaw: placeName || (Math.round(job.p.ele) + 'm'), noteRaw: '',
+      hadEle: true, eleStr: String(job.p.ele),
+      km: cumDist[job.c.peakIdx] / 1000, ele: job.p.ele
     });
-    b.disabled = true;
-    b.textContent = t('climbCreated');
-  });
+    job.b.textContent = t('climbCreated');
+  }));
+
   waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
   renderWaypoints();
 });
