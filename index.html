@@ -926,7 +926,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.8</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.9</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1225,7 +1225,7 @@
 
 </main>
 
-<footer id="footerText">v3.8 (2026.08.05) · Made by 오동도</footer>
+<footer id="footerText">v3.9 (2026.08.05) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1471,7 +1471,7 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.8';
+const APP_VERSION = 'v3.9';
 const APP_DATE = '2026.08.05';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
@@ -1577,24 +1577,121 @@ const STRAVA_BACKEND_URL = 'https://strava-corrector.strava-corrector.workers.de
 // (VWorld는 한국 IP에서만 정상 응답 + CORS 헤더 없음 → 워커도, 브라우저 직접호출도 안 됨
 //  → 한국 IP를 가진 나스를 중계 서버로 사용. 나스 서버가 재시도·최근접 매칭까지 다 처리)
 const NAS_PLACENAME_URL = 'https://placename.nimario.synology.me';
-async function vworldFindPlaceName(lat, lon) {
+async function fetchPlaceInfo(lat, lon) {
   if (!NAS_PLACENAME_URL || NAS_PLACENAME_URL.includes('YOUR-NAS-ADDRESS')) {
     console.log('[지명조회-나스]', lat, lon, '-> 나스 주소 미설정');
-    return null;
+    return { name: null, tunnels: [] };
   }
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15000);
     const res = await fetch(`${NAS_PLACENAME_URL.replace(/\/+$/, '')}/api/placename?lat=${lat}&lon=${lon}`, { signal: controller.signal });
     clearTimeout(timer);
-    if (!res.ok) { console.log('[지명조회-나스]', lat, lon, '-> HTTP', res.status); return null; }
+    if (!res.ok) { console.log('[지명조회-나스]', lat, lon, '-> HTTP', res.status); return { name: null, tunnels: [] }; }
     const data = await res.json();
     console.log('[지명조회-나스]', lat, lon, '->', data.name, '|', data.debug);
-    return data.name || null;
+    return { name: data.name || null, tunnels: data.tunnels || [] };
   } catch (e) {
     console.log('[지명조회-나스]', lat, lon, '-> 예외:', e.message);
-    return null;
+    return { name: null, tunnels: [] };
   }
+}
+
+// ── 터널 입구 판정 (경로가 실제로 그 터널을 따라가는지 기하학적으로 확인) ──
+function haversineM(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const f1 = lat1 * Math.PI / 180, f2 = lat2 * Math.PI / 180;
+  const df = (lat2 - lat1) * Math.PI / 180, dl = (lon2 - lon1) * Math.PI / 180;
+  const x = Math.sin(df / 2) ** 2 + Math.cos(f1) * Math.cos(f2) * Math.sin(dl / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+function pointToPolylineDistanceM(lat, lon, polyline) {
+  let best = Infinity;
+  for (let i = 0; i < polyline.length - 1; i++) {
+    const [lat1, lon1] = polyline[i], [lat2, lon2] = polyline[i + 1];
+    // 위경도를 대략적인 평면 근사(짧은 구간이라 충분)로 변환해 점-선분 거리 계산
+    const toXY = (la, lo) => [lo * Math.cos(lat * Math.PI / 180) * 111320, la * 110540];
+    const [x, y] = toXY(lat, lon);
+    const [x1, y1] = toXY(lat1, lon1);
+    const [x2, y2] = toXY(lat2, lon2);
+    const dx = x2 - x1, dy = y2 - y1;
+    const lenSq = dx * dx + dy * dy;
+    let t = lenSq > 0 ? ((x - x1) * dx + (y - y1) * dy) / lenSq : 0;
+    t = Math.max(0, Math.min(1, t));
+    const px = x1 + t * dx, py = y1 + t * dy;
+    const d = Math.sqrt((x - px) ** 2 + (y - py) ** 2);
+    if (d < best) best = d;
+  }
+  return best;
+}
+
+/**
+ * 후보 지점(peakIdx) 근처에서, 주어진 터널들 중 실제로 경로가 일정 거리 이상
+ * 따라가는 터널이 있으면 그 입구(진행방향 기준 먼저 만나는 쪽) 인덱스를 반환.
+ * 없으면 null.
+ */
+function findTunnelEntrance(points, cumDist, peakIdx, tunnels, routeToleranceM = 60, minOverlapM = 200) {
+  const peakDist = cumDist[peakIdx];
+  const windowM = 2200;
+
+  // peakIdx 기준 앞뒤 windowM 범위의 인덱스 구간
+  let lo = peakIdx, hi = peakIdx;
+  while (lo > 0 && peakDist - cumDist[lo] < windowM) lo--;
+  while (hi < points.length - 1 && cumDist[hi] - peakDist < windowM) hi++;
+
+  let best = null; // { overlapM, entranceIdx, tunnelName }
+  for (const tunnel of tunnels) {
+    const geometry = tunnel.geometry; // [[lat,lon], ...]
+    if (!geometry || geometry.length < 2) continue;
+
+    const inside = [];
+    for (let i = lo; i <= hi; i++) {
+      const d = pointToPolylineDistanceM(points[i].lat, points[i].lon, geometry);
+      if (d <= routeToleranceM) inside.push(i);
+    }
+    if (inside.length === 0) continue;
+
+    // 연속 구간으로 묶기 (인덱스 갭 3 이내 허용)
+    const groups = [[inside[0]]];
+    for (let k = 1; k < inside.length; k++) {
+      if (inside[k] <= groups[groups.length - 1][groups[groups.length - 1].length - 1] + 3) {
+        groups[groups.length - 1].push(inside[k]);
+      } else {
+        groups.push([inside[k]]);
+      }
+    }
+
+    for (const group of groups) {
+      const startIdx = group[0], endIdx = group[group.length - 1];
+      const overlapM = cumDist[endIdx] - cumDist[startIdx];
+      if (overlapM < minOverlapM) continue;
+      const midDist = (cumDist[startIdx] + cumDist[endIdx]) / 2;
+      if (Math.abs(midDist - peakDist) > windowM) continue;
+
+      // 터널 geometry의 양 끝점 중, 경로상 더 작은 인덱스(=먼저 만나는 쪽)를 입구로
+      const [eLat0, eLon0] = geometry[0];
+      const [eLat1, eLon1] = geometry[geometry.length - 1];
+      let nearestToStart = group[0], bestD0 = Infinity;
+      let nearestToEnd = group[0], bestD1 = Infinity;
+      for (const idx of group) {
+        const d0 = haversineM(points[idx].lat, points[idx].lon, eLat0, eLon0);
+        const d1 = haversineM(points[idx].lat, points[idx].lon, eLat1, eLon1);
+        if (d0 < bestD0) { bestD0 = d0; nearestToStart = idx; }
+        if (d1 < bestD1) { bestD1 = d1; nearestToEnd = idx; }
+      }
+      const entranceIdx = Math.min(nearestToStart, nearestToEnd);
+
+      if (!best || overlapM > best.overlapM) {
+        best = { overlapM, entranceIdx, tunnelName: tunnel.name };
+      }
+    }
+  }
+  return best;
+}
+
+function tunnelWaypointLabel(name) {
+  const base = name.replace(/\s*(터널|Tunnel)\s*$/i, '').trim();
+  return (base || name) + 'T';
 }
 
 (function stravaTab() {
@@ -1976,18 +2073,32 @@ async function vworldFindPlaceName(lat, lon) {
     return s1Waypoints.some(w => Math.abs(w.lat - lat) < 1e-6 && Math.abs(w.lon - lon) < 1e-6);
   }
 
-  async function fetchPlaceName(lat, lon) {
-    return vworldFindPlaceName(lat, lon);
+  async function s1ResolveClimbWaypoint(peakIdx) {
+    const p = s1Points[peakIdx];
+    const info = await fetchPlaceInfo(p.lat, p.lon);
+
+    if (info.tunnels && info.tunnels.length) {
+      const entrance = findTunnelEntrance(s1Points, s1CumDist, peakIdx, info.tunnels);
+      if (entrance) {
+        const ep = s1Points[entrance.entranceIdx];
+        return {
+          lat: ep.lat, lon: ep.lon, name: tunnelWaypointLabel(entrance.tunnelName), type: 'Summit',
+          arrIdx: entrance.entranceIdx, km: s1CumDist[entrance.entranceIdx] / 1000, ele: ep.ele
+        };
+      }
+    }
+    return {
+      lat: p.lat, lon: p.lon, name: info.name || (Math.round(p.ele) + 'm'), type: 'Summit',
+      arrIdx: peakIdx, km: s1CumDist[peakIdx] / 1000, ele: p.ele
+    };
   }
 
   async function s1TryCreateClimbWaypoint(c) {
     const p = s1Points[c.peakIdx];
     if (hasCoordCollision(p.lat, p.lon)) return 'collision';
-    const placeName = await fetchPlaceName(p.lat, p.lon);
-    s1Waypoints.push({
-      lat: p.lat, lon: p.lon, name: placeName || (Math.round(p.ele) + 'm'), type: 'Summit',
-      arrIdx: c.peakIdx, km: s1CumDist[c.peakIdx] / 1000, ele: p.ele
-    });
+    const wpt = await s1ResolveClimbWaypoint(c.peakIdx);
+    if (hasCoordCollision(wpt.lat, wpt.lon)) return 'collision'; // 터널입구로 옮긴 자리가 겹칠 수도 있어 재확인
+    s1Waypoints.push(wpt);
     return 'created';
   }
 
@@ -2018,16 +2129,17 @@ async function vworldFindPlaceName(lat, lon) {
       if (hasCoordCollision(p.lat, p.lon)) {
         b.textContent = t('climbSkipped');
       } else {
-        jobs.push({ b, c, p });
+        jobs.push({ b, c });
       }
     }
     // 2단계: 지명 조회는 전부 동시에 (병렬) - 순차 대기 방지
     await Promise.all(jobs.map(async job => {
-      const placeName = await fetchPlaceName(job.p.lat, job.p.lon);
-      s1Waypoints.push({
-        lat: job.p.lat, lon: job.p.lon, name: placeName || (Math.round(job.p.ele) + 'm'), type: 'Summit',
-        arrIdx: job.c.peakIdx, km: s1CumDist[job.c.peakIdx] / 1000, ele: job.p.ele
-      });
+      const wpt = await s1ResolveClimbWaypoint(job.c.peakIdx);
+      if (hasCoordCollision(wpt.lat, wpt.lon)) {
+        job.b.textContent = t('climbSkipped');
+        return;
+      }
+      s1Waypoints.push(wpt);
       job.b.textContent = t('climbCreated');
     }));
 
@@ -2815,8 +2927,30 @@ document.getElementById('climbModalOverlay').addEventListener('click', e => {
 function hasCoordCollisionT2(lat, lon) {
   return waypoints.some(w => Math.abs(parseFloat(w.latStr) - lat) < 1e-6 && Math.abs(parseFloat(w.lonStr) - lon) < 1e-6);
 }
-async function fetchPlaceNameT2(lat, lon) {
-  return vworldFindPlaceName(lat, lon);
+async function resolveClimbWaypointT2(peakIdx) {
+  const p = points[peakIdx];
+  const info = await fetchPlaceInfo(p.lat, p.lon);
+
+  if (info.tunnels && info.tunnels.length) {
+    const entrance = findTunnelEntrance(points, cumDist, peakIdx, info.tunnels);
+    if (entrance) {
+      const ep = points[entrance.entranceIdx];
+      return {
+        latStr: String(ep.lat), lonStr: String(ep.lon),
+        secIdx: '0', ptIdx: entrance.entranceIdx, arrIdx: entrance.entranceIdx,
+        typeAttr: 'Summit', nameRaw: tunnelWaypointLabel(entrance.tunnelName), noteRaw: '',
+        hadEle: true, eleStr: String(ep.ele),
+        km: cumDist[entrance.entranceIdx] / 1000, ele: ep.ele
+      };
+    }
+  }
+  return {
+    latStr: String(p.lat), lonStr: String(p.lon),
+    secIdx: '0', ptIdx: peakIdx, arrIdx: peakIdx,
+    typeAttr: 'Summit', nameRaw: info.name || (Math.round(p.ele) + 'm'), noteRaw: '',
+    hadEle: true, eleStr: String(p.ele),
+    km: cumDist[peakIdx] / 1000, ele: p.ele
+  };
 }
 document.getElementById('climbList').addEventListener('click', async e => {
   const btn = e.target.closest('.climb-create-btn');
@@ -2831,14 +2965,12 @@ document.getElementById('climbList').addEventListener('click', async e => {
     btn.textContent = t('climbSkipped');
     return;
   }
-  const placeName = await fetchPlaceNameT2(p.lat, p.lon);
-  waypoints.push({
-    latStr: String(p.lat), lonStr: String(p.lon),
-    secIdx: '0', ptIdx: c.peakIdx, arrIdx: c.peakIdx,
-    typeAttr: 'Summit', nameRaw: placeName || (Math.round(p.ele) + 'm'), noteRaw: '',
-    hadEle: true, eleStr: String(p.ele),
-    km: cumDist[c.peakIdx] / 1000, ele: p.ele
-  });
+  const wpt = await resolveClimbWaypointT2(c.peakIdx);
+  if (hasCoordCollisionT2(parseFloat(wpt.latStr), parseFloat(wpt.lonStr))) {
+    btn.textContent = t('climbSkipped');
+    return;
+  }
+  waypoints.push(wpt);
   waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
   renderWaypoints();
   btn.textContent = t('climbCreated');
@@ -2856,18 +2988,16 @@ document.getElementById('climbCreateAllBtn').addEventListener('click', async () 
     if (hasCoordCollisionT2(p.lat, p.lon)) {
       b.textContent = t('climbSkipped');
     } else {
-      jobs.push({ b, c, p });
+      jobs.push({ b, c });
     }
   }
   await Promise.all(jobs.map(async job => {
-    const placeName = await fetchPlaceNameT2(job.p.lat, job.p.lon);
-    waypoints.push({
-      latStr: String(job.p.lat), lonStr: String(job.p.lon),
-      secIdx: '0', ptIdx: job.c.peakIdx, arrIdx: job.c.peakIdx,
-      typeAttr: 'Summit', nameRaw: placeName || (Math.round(job.p.ele) + 'm'), noteRaw: '',
-      hadEle: true, eleStr: String(job.p.ele),
-      km: cumDist[job.c.peakIdx] / 1000, ele: job.p.ele
-    });
+    const wpt = await resolveClimbWaypointT2(job.c.peakIdx);
+    if (hasCoordCollisionT2(parseFloat(wpt.latStr), parseFloat(wpt.lonStr))) {
+      job.b.textContent = t('climbSkipped');
+      return;
+    }
+    waypoints.push(wpt);
     job.b.textContent = t('climbCreated');
   }));
 
