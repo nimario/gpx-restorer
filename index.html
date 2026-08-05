@@ -926,7 +926,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.9</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.10</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1225,7 +1225,7 @@
 
 </main>
 
-<footer id="footerText">v3.9 (2026.08.05) · Made by 오동도</footer>
+<footer id="footerText">v3.10 (2026.08.05) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1471,7 +1471,7 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.9';
+const APP_VERSION = 'v3.10';
 const APP_DATE = '2026.08.05';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
@@ -2206,10 +2206,12 @@ function tunnelWaypointLabel(name) {
       pendingFile = file;
       s1Points = parsed.points;
       s1CumDist = s1ComputeCumDist(s1Points);
-      s1Waypoints = parsed.waypoints.map(w => {
-        const idx = s1NearestIdx(s1Points, w.lat, w.lon);
-        return { ...w, arrIdx: idx, km: s1CumDist[idx] / 1000, ele: s1Points[idx].ele };
-      });
+      s1Waypoints = parsed.waypoints
+        .filter(w => w.name.trim() !== 'Control') // Control은 다른 웨이포인트와 같은 자리에 찍히는 중복 마커라 제외
+        .map(w => {
+          const idx = s1NearestIdx(s1Points, w.lat, w.lon);
+          return { ...w, arrIdx: idx, km: s1CumDist[idx] / 1000, ele: s1Points[idx].ele };
+        });
       s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
       s1EditingWptIdx = null;
       s1Corrected = false;
@@ -2609,6 +2611,7 @@ function parseGpxInput(text) {
     const tp = points[arrIdx];
 
     if (tp.latStr !== latStr || tp.lonStr !== lonStr) mismatches.push(decodeXml(nameRaw));
+    if (decodeXml(nameRaw).trim() === 'Control') continue; // 다른 웨이포인트와 같은 자리에 찍히는 중복 마커라 제외
 
     waypoints.push({
       latStr, lonStr, secIdx, ptIdx, typeAttr, nameRaw, noteRaw,
@@ -2695,6 +2698,7 @@ function parseTcxInput(text) {
     const tp = points[arrIdx];
 
     if (tp.latStr !== latStr || tp.lonStr !== lonStr) mismatches.push(decodeXml(nameRaw));
+    if (decodeXml(nameRaw).trim() === 'Control') continue; // 다른 웨이포인트와 같은 자리에 찍히는 중복 마커라 제외
 
     waypoints.push({
       latStr, lonStr, secIdx, ptIdx, typeAttr, nameRaw, noteRaw,
