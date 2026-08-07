@@ -783,11 +783,14 @@
 
   .wpt-head-row { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 4px; }
   .wpt-head-row h2 { margin-bottom:0 !important; }
-  #s1ClimbBtn, #climbBtn {
+  #s1WptHeadRow, #wptHeadRow { display:none; }
+  .wpt-head-row { flex-wrap:wrap; }
+  .wpt-head-row h2 { flex:1 1 auto; }
+  .wpt-head-btn {
     background:var(--card);
     border:1px solid var(--border);
     border-radius:8px;
-    color:var(--accent);
+    color:var(--dim);
     font-weight:700;
     font-size:.78rem;
     padding:7px 12px;
@@ -796,6 +799,8 @@
     white-space:nowrap;
     flex-shrink:0;
   }
+  .wpt-head-btn.accent { color:var(--accent); }
+  .wpt-empty { color:var(--dim); font-size:.85rem; text-align:center; padding:16px 8px; line-height:1.5; }
 
   #s1ClimbModalOverlay, #climbModalOverlay {
     display:none;
@@ -926,7 +931,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.11</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.12</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1004,11 +1009,12 @@
     </div>
   </div>
 
+  <div id="s1WptHeadRow" class="wpt-head-row">
+    <h2 data-i18n="wptTitle">웨이포인트</h2>
+    <button type="button" class="wpt-head-btn" id="s1BtnCsv" data-i18n="exportCsvShort">CSV</button>
+    <button type="button" class="wpt-head-btn accent" id="s1ClimbBtn" data-i18n="climbDetectBtn">⛰️ 오르막 자동 감지</button>
+  </div>
   <div id="s1WptWrap">
-    <div class="wpt-head-row">
-      <h2 data-i18n="wptTitle">웨이포인트</h2>
-      <button type="button" id="s1ClimbBtn" data-i18n="climbDetectBtn">⛰️ 오르막 자동 감지</button>
-    </div>
     <div id="s1WptList"></div>
   </div>
 
@@ -1051,10 +1057,6 @@
     <button type="button" class="export-btn" id="s1BtnTcx">
       <span class="ico">⬇️</span>
       <span class="txt"><span data-i18n="exportTcx">TCX 내보내기</span></span>
-    </button>
-    <button type="button" class="export-btn" id="s1BtnCsv">
-      <span class="ico">📊</span>
-      <span class="txt"><span data-i18n="exportCsv">웨이포인트 CSV</span></span>
     </button>
   </div>
 
@@ -1132,10 +1134,6 @@
     <span class="ico">⬇️</span>
     <span class="txt"><span data-i18n="exportTcx">TCX 내보내기</span></span>
   </button>
-  <button class="export-btn" id="btnCsv">
-    <span class="ico">📊</span>
-    <span class="txt"><span data-i18n="exportCsv">웨이포인트 CSV</span></span>
-  </button>
 </div>
 
 <!-- Stats -->
@@ -1171,11 +1169,12 @@
 </div>
 
 <!-- Waypoints -->
+<div id="wptHeadRow" class="wpt-head-row">
+  <h2 data-i18n="wptTitle">웨이포인트</h2>
+  <button type="button" class="wpt-head-btn" id="btnCsv" data-i18n="exportCsvShort">CSV</button>
+  <button type="button" class="wpt-head-btn accent" id="climbBtn" data-i18n="climbDetectBtn">⛰️ 오르막 자동 감지</button>
+</div>
 <div id="wptWrap">
-  <div class="wpt-head-row">
-    <h2 data-i18n="wptTitle">웨이포인트</h2>
-    <button type="button" id="climbBtn" data-i18n="climbDetectBtn">⛰️ 오르막 자동 감지</button>
-  </div>
   <div id="wptList"></div>
 </div>
 
@@ -1225,7 +1224,7 @@
 
 </main>
 
-<footer id="footerText">v3.11 (2026.08.05) · Made by 오동도</footer>
+<footer id="footerText">v3.12 (2026.08.06) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1274,6 +1273,7 @@ const I18N = {
     exportGpx:'GPX 내보내기',
     exportTcx:'TCX 내보내기',
     exportCsv:'웨이포인트 CSV',
+    exportCsvShort:'CSV',
     csvName:'이름', csvSegDist:'구간거리(km)', csvCumDist:'누적거리(km)', csvEle:'고도(m)', csvSegGain:'구간획득고도(m)', csvSegLoss:'구간획득내리막(m)',
     statDist:'총 거리', statGain:'획득 고도 ↑', statLoss:'획득 내리막 ↓',
     statMax:'최고 고도', statMin:'최저 고도', rawBadge:'파일 원본값',
@@ -1286,6 +1286,7 @@ const I18N = {
     ridingazuaLabel:'라이딩가즈아',
     authorName:'오동도',
     wptTitle:'웨이포인트',
+    wptEmpty:'이 파일엔 웨이포인트가 없습니다. 오르막 자동 감지로 새로 만들 수 있어요.',
     s1ChartTitle:'고도 프로파일',
     climbDetectBtn:'⛰️ 오르막 자동 감지',
     climbModalTitle:'감지된 오르막',
@@ -1351,6 +1352,7 @@ const I18N = {
     exportGpx:'Export GPX',
     exportTcx:'Export TCX',
     exportCsv:'Waypoints CSV',
+    exportCsvShort:'CSV',
     csvName:'Name', csvSegDist:'Segment Dist (km)', csvCumDist:'Cumulative Dist (km)', csvEle:'Elevation (m)', csvSegGain:'Segment Gain (m)', csvSegLoss:'Segment Loss (m)',
     statDist:'Total Distance', statGain:'Elevation Gain ↑', statLoss:'Elevation Loss ↓',
     statMax:'Max Elevation', statMin:'Min Elevation', rawBadge:'raw file value',
@@ -1363,6 +1365,7 @@ const I18N = {
     ridingazuaLabel:'ridingazua',
     authorName:'Odongdo',
     wptTitle:'Waypoints',
+    wptEmpty:'This file has no waypoints. You can create some with Auto-detect Climbs.',
     s1ChartTitle:'Elevation Profile',
     climbDetectBtn:'⛰️ Auto-detect Climbs',
     climbModalTitle:'Detected Climbs',
@@ -1428,6 +1431,7 @@ const I18N = {
     exportGpx:'GPX 書き出し',
     exportTcx:'TCX 書き出し',
     exportCsv:'ウェイポイントCSV',
+    exportCsvShort:'CSV',
     csvName:'名前', csvSegDist:'区間距離(km)', csvCumDist:'累積距離(km)', csvEle:'標高(m)', csvSegGain:'区間獲得標高(m)', csvSegLoss:'区間下降標高(m)',
     statDist:'総距離', statGain:'獲得標高 ↑', statLoss:'下降標高 ↓',
     statMax:'最高標高', statMin:'最低標高', rawBadge:'ファイル元値',
@@ -1439,6 +1443,7 @@ const I18N = {
     infoClose:'閉じる',
     ridingazuaLabel:'ridingazua',
     wptTitle:'ウェイポイント',
+    wptEmpty:'このファイルにはウェイポイントがありません。上り坂自動検出で作成できます。',
     s1ChartTitle:'標高プロファイル',
     climbDetectBtn:'⛰️ 上り坂自動検出',
     climbModalTitle:'検出された上り坂',
@@ -1480,8 +1485,8 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.11';
-const APP_DATE = '2026.08.05';
+const APP_VERSION = 'v3.12';
+const APP_DATE = '2026.08.06';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
   document.getElementById('footerText').textContent =
@@ -1557,6 +1562,7 @@ const exportBar      = document.getElementById('exportBar');
 const controlBar     = document.getElementById('controlBar');
 const statsGrid      = document.getElementById('statsGrid');
 const wptWrap        = document.getElementById('wptWrap');
+const wptHeadRow     = document.getElementById('wptHeadRow');
 const wptList        = document.getElementById('wptList');
 const chartWrap      = document.getElementById('chartWrap');
 const errorMsg       = document.getElementById('errorMsg');
@@ -1723,6 +1729,7 @@ function tunnelWaypointLabel(name) {
   const s1CsvBtn       = document.getElementById('s1BtnCsv');
   const s1WptList      = document.getElementById('s1WptList');
   const s1WptWrap      = document.getElementById('s1WptWrap');
+  const s1WptHeadRow   = document.getElementById('s1WptHeadRow');
   const s1StatsGrid    = document.getElementById('s1StatsGrid');
   const s1ControlBar   = document.getElementById('s1ControlBar');
   const s1Thresh       = document.getElementById('s1Thresh');
@@ -1850,7 +1857,11 @@ function tunnelWaypointLabel(name) {
   }
 
   function s1RenderWaypoints() {
-    if (!s1Waypoints.length) { s1WptWrap.style.display = 'none'; return; }
+    s1WptWrap.style.display = 'block';
+    if (!s1Waypoints.length) {
+      s1WptList.innerHTML = `<p class="wpt-empty" data-i18n="wptEmpty">${t('wptEmpty')}</p>`;
+      return;
+    }
 
     if (s1EasterEgg) {
       let prevKm = 0, prevArrIdx = 0;
@@ -2261,6 +2272,7 @@ function tunnelWaypointLabel(name) {
         s1Thresh.value = 0; s1ThreshVal.textContent = '0 m';
         s1RenderStats(0);
         s1RenderWaypoints();
+        s1WptHeadRow.style.display = 'flex';
         s1ControlBar.style.display = 'flex';
 
         // 차트(가장 무거운 부분)는 한 번 더 양보한 뒤에
@@ -2376,6 +2388,7 @@ function tunnelWaypointLabel(name) {
     sFileInput.value = '';
     sFileBadge.style.display = 'none';
     s1StatsGrid.style.display = 'none';
+    s1WptHeadRow.style.display = 'none';
     s1WptWrap.style.display = 'none';
     s1ControlBar.style.display = 'none';
     s1ChartWrap.style.display = 'none';
@@ -2453,7 +2466,7 @@ runBtn.addEventListener('click', () => {
 
 function hideResults() {
   lastResult = null;
-  [restoreEl, exportBar, controlBar, statsGrid, wptWrap, chartWrap, runBtn, courseNameBar]
+  [restoreEl, exportBar, controlBar, statsGrid, wptWrap, wptHeadRow, chartWrap, runBtn, courseNameBar]
     .forEach(el => el.style.display = 'none');
 }
 
@@ -2580,6 +2593,7 @@ function process(text, fname, format) {
   courseNameBar.style.display = 'flex';
   exportBar.style.display = 'flex';
   controlBar.style.display = 'flex';
+  wptHeadRow.style.display = 'flex';
   renderStats(s);
   renderWaypoints();
   drawChart();
