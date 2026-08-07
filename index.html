@@ -926,7 +926,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.10</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.11</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1225,7 +1225,7 @@
 
 </main>
 
-<footer id="footerText">v3.10 (2026.08.05) · Made by 오동도</footer>
+<footer id="footerText">v3.11 (2026.08.05) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1255,7 +1255,10 @@ const I18N = {
     s1RunBtn:'보정 시작',
     s1ProgressText:'스트라바에 업로드하는 중... (최대 1분 정도 걸릴 수 있습니다)',
     s1DownloadBtn:'다운로드',
-    s1ErrNotGpx:'.gpx 파일만 업로드할 수 있습니다.',
+    s1ErrNotGpx:'.gpx 또는 .tcx 파일만 업로드할 수 있습니다.',
+    s1ReadingFile:'파일을 읽는 중...',
+    s1ErrReadFail:'파일을 읽지 못했습니다. 다시 시도해주세요.',
+    s1ErrReadTimeout:'파일 읽기가 너무 오래 걸려 중단했습니다. 아이클라우드 등 클라우드 저장소에만 있는 파일이면, "파일" 앱에서 한 번 열어 기기에 내려받은 뒤 다시 시도해주세요.',
     s1ErrBackendNotSet:'백엔드 서버 주소가 설정되지 않았습니다. 배포 후 STRAVA_BACKEND_URL 값을 채워주세요.',
     s1ErrFailed:'보정 실패: ',
     s1ResultText:'획득 고도 {before} m → {after} m로 보정됨.',
@@ -1329,7 +1332,10 @@ const I18N = {
     s1RunBtn:'Run Correction',
     s1ProgressText:'Uploading to Strava... (can take up to a minute)',
     s1DownloadBtn:'Download',
-    s1ErrNotGpx:'Only .gpx files can be uploaded.',
+    s1ErrNotGpx:'Only .gpx or .tcx files can be uploaded.',
+    s1ReadingFile:'Reading file...',
+    s1ErrReadFail:'Failed to read the file. Please try again.',
+    s1ErrReadTimeout:'Reading the file took too long, so it was cancelled. If it\'s only stored in iCloud or another cloud service, open it once in the Files app to download it to your device, then try again.',
     s1ErrBackendNotSet:'The backend server address is not set. Fill in STRAVA_BACKEND_URL after deploying.',
     s1ErrFailed:'Correction failed: ',
     s1ResultText:'Elevation gain corrected: {before} m → {after} m.',
@@ -1403,7 +1409,10 @@ const I18N = {
     s1RunBtn:'補正開始',
     s1ProgressText:'Stravaにアップロード中...(最大1分程度かかる場合があります)',
     s1DownloadBtn:'ダウンロード',
-    s1ErrNotGpx:'.gpxファイルのみアップロードできます。',
+    s1ErrNotGpx:'.gpxまたは.tcxファイルのみアップロードできます。',
+    s1ReadingFile:'ファイルを読み込み中...',
+    s1ErrReadFail:'ファイルを読み込めませんでした。もう一度お試しください。',
+    s1ErrReadTimeout:'ファイルの読み込みに時間がかかりすぎたため中断しました。iCloudなどクラウドにしか保存されていないファイルの場合、「ファイル」アプリで一度開いて端末にダウンロードしてから再度お試しください。',
     s1ErrBackendNotSet:'バックエンドサーバーのアドレスが設定されていません。デプロイ後にSTRAVA_BACKEND_URLの値を入力してください。',
     s1ErrFailed:'補正に失敗しました: ',
     s1ResultText:'獲得標高 {before} m → {after} mに補正されました。',
@@ -1471,7 +1480,7 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.10';
+const APP_VERSION = 'v3.11';
 const APP_DATE = '2026.08.05';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
@@ -2198,37 +2207,69 @@ function tunnelWaypointLabel(name) {
     hideSError();
     const lower = file.name.toLowerCase();
     if (!lower.endsWith('.gpx') && !lower.endsWith('.tcx')) { showSError(t('s1ErrNotGpx')); return; }
+
+    // 파일 선택 즉시 로딩 표시 (읽기/파싱/렌더링이 오래 걸려도 "멈춘 것처럼" 안 보이게)
+    sFileBadge.style.display = 'none';
+    sRunBtn.style.display = 'none';
+    sProgressText.textContent = t('s1ReadingFile');
+    sProgress.style.display = 'flex';
+
     const reader = new FileReader();
+    const safetyTimer = setTimeout(() => reader.abort(), 20000); // 20초 넘으면 포기
+
+    reader.onerror = () => {
+      clearTimeout(safetyTimer);
+      sProgress.style.display = 'none';
+      showSError(t('s1ErrReadFail'));
+    };
+    reader.onabort = () => {
+      clearTimeout(safetyTimer);
+      sProgress.style.display = 'none';
+      showSError(t('s1ErrReadTimeout'));
+    };
+
     reader.onload = e => {
-      const parsed = lower.endsWith('.tcx') ? s1ParseTcx(e.target.result) : s1ParseGpx(e.target.result);
-      if (!parsed.points.length) { showSError(t('errNoTrack')); return; }
+      clearTimeout(safetyTimer);
+      const text = e.target.result;
+      const parsed = lower.endsWith('.tcx') ? s1ParseTcx(text) : s1ParseGpx(text);
+      if (!parsed.points.length) { sProgress.style.display = 'none'; showSError(t('errNoTrack')); return; }
 
-      pendingFile = file;
-      s1Points = parsed.points;
-      s1CumDist = s1ComputeCumDist(s1Points);
-      s1Waypoints = parsed.waypoints
-        .filter(w => w.name.trim() !== 'Control') // Control은 다른 웨이포인트와 같은 자리에 찍히는 중복 마커라 제외
-        .map(w => {
-          const idx = s1NearestIdx(s1Points, w.lat, w.lon);
-          return { ...w, arrIdx: idx, km: s1CumDist[idx] / 1000, ele: s1Points[idx].ele };
-        });
-      s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
-      s1EditingWptIdx = null;
-      s1Corrected = false;
+      // 여기서 한 번 브라우저에 제어권을 양보 - 아이폰 등에서 스크립트가 너무 오래
+      // 안 멈추고 도는 것처럼 보이면 응답없음으로 판단해 조용히 중단시키는 경우가 있어서,
+      // 무거운 작업(웨이포인트 매칭·통계·차트) 전에 한 박자 쉬어감
+      setTimeout(() => {
+        pendingFile = file;
+        s1Points = parsed.points;
+        s1CumDist = s1ComputeCumDist(s1Points);
+        s1Waypoints = parsed.waypoints
+          .filter(w => w.name.trim() !== 'Control') // Control은 다른 웨이포인트와 같은 자리에 찍히는 중복 마커라 제외
+          .map(w => {
+            const idx = s1NearestIdx(s1Points, w.lat, w.lon);
+            return { ...w, arrIdx: idx, km: s1CumDist[idx] / 1000, ele: s1Points[idx].ele };
+          });
+        s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
+        s1EditingWptIdx = null;
+        s1Corrected = false;
 
-      sFileName.textContent = file.name;
-      sFileBadge.style.display = 'flex';
-      sCourseName.value = file.name.replace(/\.(gpx|tcx)$/i, '') + '_corrected';
-      s1Param.value = '';
-      sResult.style.display = 'none';
-      sOptionsBar.style.display = 'none';
-      sDownloadBar.style.display = 'none';
-      s1Thresh.value = 0; s1ThreshVal.textContent = '0 m';
-      s1RenderStats(0);
-      s1RenderWaypoints();
-      s1ControlBar.style.display = 'flex';
-      s1DrawChart();
-      sRunBtn.style.display = 'flex';
+        sFileName.textContent = file.name;
+        sFileBadge.style.display = 'flex';
+        sCourseName.value = file.name.replace(/\.(gpx|tcx)$/i, '') + '_corrected';
+        s1Param.value = '';
+        sResult.style.display = 'none';
+        sOptionsBar.style.display = 'none';
+        sDownloadBar.style.display = 'none';
+        s1Thresh.value = 0; s1ThreshVal.textContent = '0 m';
+        s1RenderStats(0);
+        s1RenderWaypoints();
+        s1ControlBar.style.display = 'flex';
+
+        // 차트(가장 무거운 부분)는 한 번 더 양보한 뒤에
+        setTimeout(() => {
+          s1DrawChart();
+          sProgress.style.display = 'none';
+          sRunBtn.style.display = 'flex';
+        }, 0);
+      }, 0);
     };
     reader.readAsText(file);
   }
