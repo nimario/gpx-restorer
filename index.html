@@ -704,7 +704,33 @@
   .wpt-row.wpt-table .wpt-gain { color:var(--gain); }
   .wpt-row.wpt-table .wpt-loss { color:var(--loss); }
 
-  .wpt-actions { display:flex; gap:2px; justify-content:flex-end; }
+  .wpt-actions { display:flex; gap:2px; justify-content:flex-end; align-items:center; }
+  .wpt-actions button, .wpt-actions a { background:none; border:none; cursor:pointer; padding:2px; font-size:.9rem; text-decoration:none; line-height:1; }
+  .wpt-check { width:15px; height:15px; margin-right:2px; accent-color:var(--accent); cursor:pointer; flex-shrink:0; }
+  .wpt-save-bar {
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    background:var(--card);
+    border:1px solid var(--accent);
+    border-radius:8px;
+    padding:8px 12px;
+    margin-bottom:8px;
+    font-size:.8rem;
+  }
+  .wpt-save-bar button {
+    background:linear-gradient(135deg, #123a5c, #0e4e6e);
+    border:1px solid #2a6a95;
+    border-radius:8px;
+    color:#e8f4fc;
+    font-size:.78rem;
+    font-weight:700;
+    padding:7px 12px;
+    cursor:pointer;
+    font-family:inherit;
+    white-space:nowrap;
+  }
   .wpt-actions button {
     width:24px; height:24px;
     border:none; background:none;
@@ -931,7 +957,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.12</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.13</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1013,6 +1039,10 @@
     <h2 data-i18n="wptTitle">웨이포인트</h2>
     <button type="button" class="wpt-head-btn" id="s1BtnCsv" data-i18n="exportCsvShort">CSV</button>
     <button type="button" class="wpt-head-btn accent" id="s1ClimbBtn" data-i18n="climbDetectBtn">⛰️ 오르막 자동 감지</button>
+  </div>
+  <div id="s1WptSaveBar" class="wpt-save-bar">
+    <span id="s1WptSaveCount"></span>
+    <button type="button" id="s1WptSaveBtn" data-i18n="wptSaveSelected">선택 저장</button>
   </div>
   <div id="s1WptWrap">
     <div id="s1WptList"></div>
@@ -1174,6 +1204,10 @@
   <button type="button" class="wpt-head-btn" id="btnCsv" data-i18n="exportCsvShort">CSV</button>
   <button type="button" class="wpt-head-btn accent" id="climbBtn" data-i18n="climbDetectBtn">⛰️ 오르막 자동 감지</button>
 </div>
+<div id="wptSaveBar" class="wpt-save-bar">
+  <span id="wptSaveCount"></span>
+  <button type="button" id="wptSaveBtn" data-i18n="wptSaveSelected">선택 저장</button>
+</div>
 <div id="wptWrap">
   <div id="wptList"></div>
 </div>
@@ -1224,7 +1258,7 @@
 
 </main>
 
-<footer id="footerText">v3.12 (2026.08.06) · Made by 오동도</footer>
+<footer id="footerText">v3.13 (2026.08.11) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1274,6 +1308,12 @@ const I18N = {
     exportTcx:'TCX 내보내기',
     exportCsv:'웨이포인트 CSV',
     exportCsvShort:'CSV',
+    wptSaveSelected:'선택 저장',
+    wptSaveCount:'{n}개 선택됨',
+    wptSaving:'저장 중...',
+    wptSaveDone:'{n}개 저장 완료 (다음부터 이 위치는 자동으로 이 이름이 붙어요)',
+    wptSaveFail:'저장 실패: {err}',
+    wptMapLink:'지도',
     csvName:'이름', csvSegDist:'구간거리(km)', csvCumDist:'누적거리(km)', csvEle:'고도(m)', csvSegGain:'구간획득고도(m)', csvSegLoss:'구간획득내리막(m)',
     statDist:'총 거리', statGain:'획득 고도 ↑', statLoss:'획득 내리막 ↓',
     statMax:'최고 고도', statMin:'최저 고도', rawBadge:'파일 원본값',
@@ -1353,6 +1393,12 @@ const I18N = {
     exportTcx:'Export TCX',
     exportCsv:'Waypoints CSV',
     exportCsvShort:'CSV',
+    wptSaveSelected:'Save Selected',
+    wptSaveCount:'{n} selected',
+    wptSaving:'Saving...',
+    wptSaveDone:'{n} saved (this location will auto-fill this name next time)',
+    wptSaveFail:'Save failed: {err}',
+    wptMapLink:'Map',
     csvName:'Name', csvSegDist:'Segment Dist (km)', csvCumDist:'Cumulative Dist (km)', csvEle:'Elevation (m)', csvSegGain:'Segment Gain (m)', csvSegLoss:'Segment Loss (m)',
     statDist:'Total Distance', statGain:'Elevation Gain ↑', statLoss:'Elevation Loss ↓',
     statMax:'Max Elevation', statMin:'Min Elevation', rawBadge:'raw file value',
@@ -1432,6 +1478,12 @@ const I18N = {
     exportTcx:'TCX 書き出し',
     exportCsv:'ウェイポイントCSV',
     exportCsvShort:'CSV',
+    wptSaveSelected:'選択を保存',
+    wptSaveCount:'{n}件選択中',
+    wptSaving:'保存中...',
+    wptSaveDone:'{n}件保存しました(次回からこの位置に自動でこの名前が入ります)',
+    wptSaveFail:'保存失敗: {err}',
+    wptMapLink:'地図',
     csvName:'名前', csvSegDist:'区間距離(km)', csvCumDist:'累積距離(km)', csvEle:'標高(m)', csvSegGain:'区間獲得標高(m)', csvSegLoss:'区間下降標高(m)',
     statDist:'総距離', statGain:'獲得標高 ↑', statLoss:'下降標高 ↓',
     statMax:'最高標高', statMin:'最低標高', rawBadge:'ファイル元値',
@@ -1485,8 +1537,8 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.12';
-const APP_DATE = '2026.08.06';
+const APP_VERSION = 'v3.13';
+const APP_DATE = '2026.08.11';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
   document.getElementById('footerText').textContent =
@@ -1544,6 +1596,7 @@ function wptTypeLabel(type) {
 function escapeAttr(s) { return escapeHtml(s).replace(/"/g, '&quot;'); }
 
 let editingWptIdx = null; // 현재 편집 중인 웨이포인트 인덱스 (없으면 null)
+let selectedWpt = new Set();
 let easterEggMode = false; // 파일명이 "@@"로 끝나면 웨이포인트를 5개 값 표로 표시
 
 // ═══════════════════════════════════════════════════════
@@ -1563,6 +1616,9 @@ const controlBar     = document.getElementById('controlBar');
 const statsGrid      = document.getElementById('statsGrid');
 const wptWrap        = document.getElementById('wptWrap');
 const wptHeadRow     = document.getElementById('wptHeadRow');
+const wptSaveBar     = document.getElementById('wptSaveBar');
+const wptSaveCount   = document.getElementById('wptSaveCount');
+const wptSaveBtn     = document.getElementById('wptSaveBtn');
 const wptList        = document.getElementById('wptList');
 const chartWrap      = document.getElementById('chartWrap');
 const errorMsg       = document.getElementById('errorMsg');
@@ -1613,6 +1669,36 @@ async function fetchPlaceInfo(lat, lon) {
 }
 
 // ── 터널 입구 판정 (경로가 실제로 그 터널을 따라가는지 기하학적으로 확인) ──
+// ── 지도 링크: 한국 좌표면 카카오맵, 아니면 구글맵 ──
+function isInKorea(lat, lon) {
+  return lat >= 33 && lat <= 38.7 && lon >= 124.5 && lon <= 132;
+}
+function mapLinkFor(lat, lon, name) {
+  if (isInKorea(lat, lon)) {
+    return { url: `https://map.kakao.com/link/map/${encodeURIComponent(name || '지점')},${lat},${lon}`, label: '카카오맵' };
+  }
+  return { url: `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`, label: 'Google맵' };
+}
+
+// ── 사용자 지명 저장 (나스 서버에) ──
+async function saveUserPlaces(entries) {
+  if (!NAS_PLACENAME_URL || NAS_PLACENAME_URL.includes('YOUR-NAS-ADDRESS')) {
+    return { ok: false, error: '나스 주소 미설정' };
+  }
+  try {
+    const res = await fetch(`${NAS_PLACENAME_URL.replace(/\/+$/, '')}/api/save-places`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ places: entries })
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false, error: data.error || `HTTP ${res.status}` };
+    return { ok: true, saved: data.saved };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+
 function haversineM(lat1, lon1, lat2, lon2) {
   const R = 6371000;
   const f1 = lat1 * Math.PI / 180, f2 = lat2 * Math.PI / 180;
@@ -1730,6 +1816,9 @@ function tunnelWaypointLabel(name) {
   const s1WptList      = document.getElementById('s1WptList');
   const s1WptWrap      = document.getElementById('s1WptWrap');
   const s1WptHeadRow   = document.getElementById('s1WptHeadRow');
+  const s1WptSaveBar   = document.getElementById('s1WptSaveBar');
+  const s1WptSaveCount = document.getElementById('s1WptSaveCount');
+  const s1WptSaveBtn   = document.getElementById('s1WptSaveBtn');
   const s1StatsGrid    = document.getElementById('s1StatsGrid');
   const s1ControlBar   = document.getElementById('s1ControlBar');
   const s1Thresh       = document.getElementById('s1Thresh');
@@ -1743,6 +1832,7 @@ function tunnelWaypointLabel(name) {
   let pendingFile = null;
   let s1Points = [], s1Waypoints = [], s1CumDist = [];
   let s1EditingWptIdx = null;
+  let s1SelectedWpt = new Set();
   let s1Chart = null;
   let s1Corrected = false; // 보정 완료 여부 (다운로드 가능 여부 판단)
   let s1EasterEgg = false; // 매개변수에 "오동도짱" 입력 시 5개 값 표 형태
@@ -1856,6 +1946,22 @@ function tunnelWaypointLabel(name) {
     return s;
   }
 
+  function s1WptActionsHtml(w, i) {
+    const map = mapLinkFor(w.lat, w.lon, w.name);
+    return `
+      <input type="checkbox" class="wpt-check" data-idx="${i}"${s1SelectedWpt.has(i) ? ' checked' : ''}>
+      <a href="${map.url}" target="_blank" rel="noopener" title="${map.label}">📍</a>
+      <button type="button" class="wpt-edit-btn" data-idx="${i}" title="편집">✏️</button>
+      <button type="button" class="wpt-del-btn" data-idx="${i}" title="삭제">🗑️</button>`;
+  }
+
+  function s1UpdateSaveBar() {
+    const n = s1SelectedWpt.size;
+    if (n === 0) { s1WptSaveBar.style.display = 'none'; return; }
+    s1WptSaveBar.style.display = 'flex';
+    s1WptSaveCount.textContent = t('wptSaveCount').replace('{n}', n);
+  }
+
   function s1RenderWaypoints() {
     s1WptWrap.style.display = 'block';
     if (!s1Waypoints.length) {
@@ -1879,10 +1985,7 @@ function tunnelWaypointLabel(name) {
             <div class="wpt-num">${fmtNum(Math.round(w.ele))}</div>
             <div class="wpt-gain">${fmtNum(Math.round(seg.gain))}</div>
             <div class="wpt-loss">${fmtNum(Math.round(seg.loss))}</div>
-            <div class="wpt-actions">
-              <button type="button" class="wpt-edit-btn" data-idx="${i}" title="편집">✏️</button>
-              <button type="button" class="wpt-del-btn" data-idx="${i}" title="삭제">🗑️</button>
-            </div>
+            <div class="wpt-actions">${s1WptActionsHtml(w, i)}</div>
           </div>`;
       }).join('');
       s1WptList.innerHTML = `
@@ -1902,10 +2005,7 @@ function tunnelWaypointLabel(name) {
           <div class="wpt-name">${escapeHtml(w.name)}<small>${wptTypeLabel(w.type)}</small></div>
           <div class="wpt-km">${fmtNum(w.km, 1)} km</div>
           <div class="wpt-ele">${fmtNum(Math.round(w.ele))} m</div>
-          <div class="wpt-actions">
-            <button type="button" class="wpt-edit-btn" data-idx="${i}" title="편집">✏️</button>
-            <button type="button" class="wpt-del-btn" data-idx="${i}" title="삭제">🗑️</button>
-          </div>
+          <div class="wpt-actions">${s1WptActionsHtml(w, i)}</div>
         </div>`;
     }).join('');
     s1WptWrap.style.display = 'block';
@@ -1932,7 +2032,12 @@ function tunnelWaypointLabel(name) {
       const idx = parseInt(delBtn.dataset.idx);
       s1Waypoints.splice(idx, 1);
       if (s1EditingWptIdx === idx) s1EditingWptIdx = null;
+      // 삭제된 인덱스 이후 선택 항목들 인덱스 보정
+      const newSel = new Set();
+      s1SelectedWpt.forEach(i => { if (i < idx) newSel.add(i); else if (i > idx) newSel.add(i - 1); });
+      s1SelectedWpt = newSel;
       s1RenderWaypoints();
+      s1UpdateSaveBar();
     } else if (saveBtn) {
       const idx = parseInt(saveBtn.dataset.idx);
       const row = saveBtn.closest('.wpt-row');
@@ -1946,6 +2051,43 @@ function tunnelWaypointLabel(name) {
       s1RenderWaypoints();
     } else if (cancelBtn) { s1EditingWptIdx = null; s1RenderWaypoints(); }
   });
+
+  s1WptList.addEventListener('change', e => {
+    const chk = e.target.closest('.wpt-check');
+    if (!chk) return;
+    const idx = parseInt(chk.dataset.idx);
+    if (chk.checked) s1SelectedWpt.add(idx); else s1SelectedWpt.delete(idx);
+    s1UpdateSaveBar();
+  });
+
+  s1WptSaveBtn.addEventListener('click', async () => {
+    const entries = Array.from(s1SelectedWpt).map(i => {
+      const w = s1Waypoints[i];
+      return { name: w.name, lat: w.lat, lon: w.lon };
+    });
+    if (!entries.length) return;
+    s1WptSaveBtn.disabled = true;
+    s1WptSaveBtn.textContent = t('wptSaving');
+    const result = await saveUserPlaces(entries);
+    s1WptSaveBtn.disabled = false;
+    s1WptSaveBtn.textContent = t('wptSaveSelected');
+    if (result.ok) {
+      hideSError();
+      s1SelectedWpt.clear();
+      s1RenderWaypoints();
+      s1UpdateSaveBar();
+      s1ShowSaveToast(t('wptSaveDone').replace('{n}', result.saved));
+    } else {
+      showSError(t('wptSaveFail').replace('{err}', result.error));
+    }
+  });
+
+  function s1ShowSaveToast(msg) {
+    s1WptSaveCount.textContent = msg;
+    s1WptSaveBar.style.display = 'flex';
+    setTimeout(() => { if (s1SelectedWpt.size === 0) s1WptSaveBar.style.display = 'none'; }, 3500);
+  }
+
 
   // ── 노이즈 필터 ──
   s1Thresh.addEventListener('input', () => {
@@ -2260,6 +2402,7 @@ function tunnelWaypointLabel(name) {
           });
         s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
         s1EditingWptIdx = null;
+        s1SelectedWpt = new Set();
         s1Corrected = false;
 
         sFileName.textContent = file.name;
@@ -2384,6 +2527,7 @@ function tunnelWaypointLabel(name) {
     pendingFile = null;
     s1Points = []; s1Waypoints = []; s1CumDist = [];
     s1EditingWptIdx = null; s1Corrected = false; s1EasterEgg = false;
+    s1SelectedWpt = new Set(); s1WptSaveBar.style.display = 'none';
     hideSError();
     sFileInput.value = '';
     sFileBadge.style.display = 'none';
@@ -2466,7 +2610,7 @@ runBtn.addEventListener('click', () => {
 
 function hideResults() {
   lastResult = null;
-  [restoreEl, exportBar, controlBar, statsGrid, wptWrap, wptHeadRow, chartWrap, runBtn, courseNameBar]
+  [restoreEl, exportBar, controlBar, statsGrid, wptWrap, wptHeadRow, wptSaveBar, chartWrap, runBtn, courseNameBar]
     .forEach(el => el.style.display = 'none');
 }
 
@@ -2485,6 +2629,7 @@ function goHome() {
   points = []; waypoints = []; cumDist = [];
   restoredGpxText = '';
   editingWptIdx = null;
+  selectedWpt = new Set(); wptSaveBar.style.display = 'none';
   easterEggMode = false;
   courseNameInput.value = '';
   paramInput.value = '';
@@ -2570,6 +2715,7 @@ function process(text, fname, format) {
   waypoints = [];
   restoredGpxText = '';
   editingWptIdx = null;
+  selectedWpt = new Set();
 
   const { restoredCount, osmCount, mismatches } =
     format === 'tcx' ? parseTcxInput(text) : parseGpxInput(text);
@@ -3064,8 +3210,29 @@ document.getElementById('climbCreateAllBtn').addEventListener('click', async () 
   renderWaypoints();
 });
 
+function wptActionsHtml(w, i) {
+  const lat = parseFloat(w.latStr), lon = parseFloat(w.lonStr);
+  const map = mapLinkFor(lat, lon, decodeXml(w.nameRaw));
+  return `
+    <input type="checkbox" class="wpt-check" data-idx="${i}"${selectedWpt.has(i) ? ' checked' : ''}>
+    <a href="${map.url}" target="_blank" rel="noopener" title="${map.label}">📍</a>
+    <button type="button" class="wpt-edit-btn" data-idx="${i}" title="편집">✏️</button>
+    <button type="button" class="wpt-del-btn" data-idx="${i}" title="삭제">🗑️</button>`;
+}
+
+function updateSaveBar() {
+  const n = selectedWpt.size;
+  if (n === 0) { wptSaveBar.style.display = 'none'; return; }
+  wptSaveBar.style.display = 'flex';
+  wptSaveCount.textContent = t('wptSaveCount').replace('{n}', n);
+}
+
 function renderWaypoints() {
-  if (!waypoints.length) { wptWrap.style.display = 'none'; return; }
+  wptWrap.style.display = 'block';
+  if (!waypoints.length) {
+    wptList.innerHTML = `<p class="wpt-empty" data-i18n="wptEmpty">${t('wptEmpty')}</p>`;
+    return;
+  }
 
   if (easterEggMode) {
     let prevKm = 0, prevArrIdx = 0;
@@ -3086,10 +3253,7 @@ function renderWaypoints() {
           <div class="wpt-num">${fmtNum(Math.round(w.ele))}</div>
           <div class="wpt-gain">${fmtNum(Math.round(seg.gain))}</div>
           <div class="wpt-loss">${fmtNum(Math.round(seg.loss))}</div>
-          <div class="wpt-actions">
-            <button type="button" class="wpt-edit-btn" data-idx="${i}" title="편집">✏️</button>
-            <button type="button" class="wpt-del-btn" data-idx="${i}" title="삭제">🗑️</button>
-          </div>
+          <div class="wpt-actions">${wptActionsHtml(w, i)}</div>
         </div>`;
     }).join('');
     wptList.innerHTML = `
@@ -3109,10 +3273,7 @@ function renderWaypoints() {
         <div class="wpt-name">${escapeHtml(decodeXml(w.nameRaw))}<small>${wptTypeLabel(w.typeAttr)}</small></div>
         <div class="wpt-km">${fmtNum(w.km, 1)} km</div>
         <div class="wpt-ele">${fmtNum(Math.round(w.ele))} m</div>
-        <div class="wpt-actions">
-          <button type="button" class="wpt-edit-btn" data-idx="${i}" title="편집">✏️</button>
-          <button type="button" class="wpt-del-btn" data-idx="${i}" title="삭제">🗑️</button>
-        </div>
+        <div class="wpt-actions">${wptActionsHtml(w, i)}</div>
       </div>`;
   }).join('');
   wptWrap.style.display = 'block';
@@ -3152,7 +3313,11 @@ wptList.addEventListener('click', e => {
     const idx = parseInt(delBtn.dataset.idx);
     waypoints.splice(idx, 1);
     if (editingWptIdx === idx) editingWptIdx = null;
+    const newSel = new Set();
+    selectedWpt.forEach(i => { if (i < idx) newSel.add(i); else if (i > idx) newSel.add(i - 1); });
+    selectedWpt = newSel;
     renderWaypoints();
+    updateSaveBar();
   } else if (saveBtn) {
     const idx = parseInt(saveBtn.dataset.idx);
     const row = saveBtn.closest('.wpt-row');
@@ -3172,6 +3337,42 @@ wptList.addEventListener('click', e => {
     renderWaypoints();
   }
 });
+
+wptList.addEventListener('change', e => {
+  const chk = e.target.closest('.wpt-check');
+  if (!chk) return;
+  const idx = parseInt(chk.dataset.idx);
+  if (chk.checked) selectedWpt.add(idx); else selectedWpt.delete(idx);
+  updateSaveBar();
+});
+
+wptSaveBtn.addEventListener('click', async () => {
+  const entries = Array.from(selectedWpt).map(i => {
+    const w = waypoints[i];
+    return { name: decodeXml(w.nameRaw), lat: parseFloat(w.latStr), lon: parseFloat(w.lonStr) };
+  });
+  if (!entries.length) return;
+  wptSaveBtn.disabled = true;
+  wptSaveBtn.textContent = t('wptSaving');
+  const result = await saveUserPlaces(entries);
+  wptSaveBtn.disabled = false;
+  wptSaveBtn.textContent = t('wptSaveSelected');
+  if (result.ok) {
+    hideError();
+    selectedWpt.clear();
+    renderWaypoints();
+    wptShowSaveToast(t('wptSaveDone').replace('{n}', result.saved));
+  } else {
+    showError(t('wptSaveFail').replace('{err}', result.error));
+  }
+});
+
+function wptShowSaveToast(msg) {
+  wptSaveCount.textContent = msg;
+  wptSaveBar.style.display = 'flex';
+  setTimeout(() => { if (selectedWpt.size === 0) wptSaveBar.style.display = 'none'; }, 3500);
+}
+
 
 function drawChart() {
   const canvas = document.getElementById('elevChart');
