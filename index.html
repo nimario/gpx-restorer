@@ -643,7 +643,7 @@
   }
   .wpt-row {
     display:grid;
-    grid-template-columns:36px 1fr 80px 76px 52px;
+    grid-template-columns:36px 1fr 80px 76px 84px;
     align-items:center;
     gap:10px;
     padding:9px 6px;
@@ -652,7 +652,7 @@
   }
   .wpt-row:last-child { border-bottom:none; }
   .wpt-ico  { font-size:1.15rem; text-align:center; }
-  .wpt-name { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .wpt-name { min-width:0; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .wpt-name small { display:block; font-weight:400; font-size:.72rem; color:var(--dim); }
   .wpt-km   { text-align:right; color:var(--dist);   font-weight:700; font-variant-numeric:tabular-nums; }
   .wpt-ele  { text-align:right; color:var(--accent); font-weight:700; font-variant-numeric:tabular-nums; }
@@ -660,7 +660,7 @@
   /* ── 이스터에그: 5개 값 표 형태 (@@) ── */
   .wpt-legend {
     display:grid;
-    grid-template-columns:20px 1fr 40px 46px 38px 38px 38px 40px;
+    grid-template-columns:20px 1fr 32px 38px 30px 30px 30px 80px;
     gap:2px;
     min-width:0;
     font-size:.6rem;
@@ -677,7 +677,7 @@
   .wpt-legend span:not(:nth-child(2)) { text-align:right; }
   .wpt-row.wpt-table {
     display:grid;
-    grid-template-columns:20px 1fr 40px 46px 38px 38px 38px 40px;
+    grid-template-columns:20px 1fr 32px 38px 30px 30px 30px 80px;
     gap:2px;
     min-width:0;
     align-items:center;
@@ -941,8 +941,8 @@
     #exportBar { flex-direction:column; }
     #courseNameBar { flex-direction:column; align-items:stretch; gap:6px; }
     #paramInput { flex:1 1 auto; }
-    .wpt-row { grid-template-columns:30px 1fr 60px 54px 46px; font-size:.82rem; }
-    .wpt-legend, .wpt-row.wpt-table { grid-template-columns:18px 1fr 38px 44px 36px 36px 36px 36px; gap:2px; }
+    .wpt-row { grid-template-columns:30px 1fr 50px 42px 80px; font-size:.82rem; }
+    .wpt-legend, .wpt-row.wpt-table { grid-template-columns:18px 1fr 28px 34px 28px 28px 28px 80px; gap:2px; }
     .wpt-row.wpt-table { font-size:.78rem; padding:9px 3px; }
     .wpt-row.wpt-table .wpt-name { font-size:.84rem; }
     .wpt-legend { font-size:.54rem; }
@@ -957,7 +957,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.13</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.14</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1258,7 +1258,7 @@
 
 </main>
 
-<footer id="footerText">v3.13 (2026.08.11) · Made by 오동도</footer>
+<footer id="footerText">v3.14 (2026.08.12) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1537,8 +1537,8 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.13';
-const APP_DATE = '2026.08.11';
+const APP_VERSION = 'v3.14';
+const APP_DATE = '2026.08.12';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
   document.getElementById('footerText').textContent =
