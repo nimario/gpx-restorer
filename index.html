@@ -850,7 +850,9 @@
     overflow-y:auto;
   }
   #s1ClimbModal h2, #climbModal h2 { font-size:1rem; margin-bottom:0; }
-  .climb-modal-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px; }
+  .climb-modal-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px; }
+  .climb-summary { text-align:right; font-size:.78rem; color:var(--dim); margin-bottom:12px; font-variant-numeric:tabular-nums; }
+  .climb-summary b { color:var(--accent); font-weight:700; }
   #s1ClimbCreateAllBtn, #climbCreateAllBtn {
     background:linear-gradient(135deg, #123a5c, #0e4e6e);
     border:1px solid #2a6a95;
@@ -957,7 +959,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.14</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.15</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1097,6 +1099,7 @@
         <h2 data-i18n="climbModalTitle">감지된 오르막</h2>
         <button type="button" id="s1ClimbCreateAllBtn" data-i18n="climbCreateAllBtn">전체 생성</button>
       </div>
+      <div id="s1ClimbSummary" class="climb-summary"></div>
       <div id="s1ClimbList"></div>
       <button type="button" id="s1ClimbCloseBtn" data-i18n="climbModalClose">닫기</button>
     </div>
@@ -1219,6 +1222,7 @@
       <h2 data-i18n="climbModalTitle">감지된 오르막</h2>
       <button type="button" id="climbCreateAllBtn" data-i18n="climbCreateAllBtn">전체 생성</button>
     </div>
+    <div id="climbSummary" class="climb-summary"></div>
     <div id="climbList"></div>
     <button type="button" id="climbCloseBtn" data-i18n="climbModalClose">닫기</button>
   </div>
@@ -1258,7 +1262,7 @@
 
 </main>
 
-<footer id="footerText">v3.14 (2026.08.12) · Made by 오동도</footer>
+<footer id="footerText">v3.15 (2026.09.03) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1330,6 +1334,7 @@ const I18N = {
     s1ChartTitle:'고도 프로파일',
     climbDetectBtn:'⛰️ 오르막 자동 감지',
     climbModalTitle:'감지된 오르막',
+    climbSummary:'오르막 합계 <b>{km}km</b> · 획득고도 <b>{gain}m</b>',
     climbModalClose:'닫기',
     climbNone:'감지된 오르막이 없습니다 (500m 이상, 평균 경사도 3% 이상 기준)',
     climbCreateBtn:'웨이포인트 생성',
@@ -1415,6 +1420,7 @@ const I18N = {
     s1ChartTitle:'Elevation Profile',
     climbDetectBtn:'⛰️ Auto-detect Climbs',
     climbModalTitle:'Detected Climbs',
+    climbSummary:'Total <b>{km}km</b> · Gain <b>{gain}m</b>',
     climbModalClose:'Close',
     climbNone:'No climbs detected (500m+ length, 3%+ average grade)',
     climbCreateBtn:'Create Waypoint',
@@ -1499,6 +1505,7 @@ const I18N = {
     s1ChartTitle:'標高プロファイル',
     climbDetectBtn:'⛰️ 上り坂自動検出',
     climbModalTitle:'検出された上り坂',
+    climbSummary:'合計 <b>{km}km</b> · 獲得標高 <b>{gain}m</b>',
     climbModalClose:'閉じる',
     climbNone:'検出された上り坂はありません(500m以上、平均勾配3%以上基準)',
     climbCreateBtn:'ウェイポイント作成',
@@ -1537,8 +1544,8 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.14';
-const APP_DATE = '2026.08.12';
+const APP_VERSION = 'v3.15';
+const APP_DATE = '2026.09.03';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
   document.getElementById('footerText').textContent =
@@ -2212,6 +2219,7 @@ function tunnelWaypointLabel(name) {
     const climbs = s1DetectClimbs();
     if (!climbs.length) {
       s1ClimbList.innerHTML = `<p style="color:var(--dim);font-size:.85rem;">${t('climbNone')}</p>`;
+      s1ClimbSummary.innerHTML = '';
     } else {
       s1ClimbList.innerHTML = climbs.map((c, idx) => {
         const cat = s1ClimbCategory(c.score);
@@ -2226,6 +2234,9 @@ function tunnelWaypointLabel(name) {
           </div>`;
       }).join('');
       s1ClimbList._climbs = climbs;
+      const totalKm = climbs.reduce((sum, c) => sum + c.lengthM, 0) / 1000;
+      const totalGain = climbs.reduce((sum, c) => sum + (c.lengthM * c.grade / 100), 0);
+      s1ClimbSummary.innerHTML = t('climbSummary').replace('{km}', fmtNum(totalKm, 1)).replace('{gain}', fmtNum(Math.round(totalGain)));
     }
     s1ClimbOverlay.classList.add('open');
   });
@@ -3106,8 +3117,10 @@ document.getElementById('climbBtn').addEventListener('click', () => {
   if (!points.length) return;
   const climbs = detectClimbs();
   const climbListEl = document.getElementById('climbList');
+  const climbSummaryEl = document.getElementById('climbSummary');
   if (!climbs.length) {
     climbListEl.innerHTML = `<p style="color:var(--dim);font-size:.85rem;">${t('climbNone')}</p>`;
+    climbSummaryEl.innerHTML = '';
   } else {
     climbListEl.innerHTML = climbs.map((c, idx) => {
       const cat = climbCategory(c.score);
@@ -3122,6 +3135,9 @@ document.getElementById('climbBtn').addEventListener('click', () => {
         </div>`;
     }).join('');
     climbListEl._climbs = climbs;
+    const totalKm = climbs.reduce((sum, c) => sum + c.lengthM, 0) / 1000;
+    const totalGain = climbs.reduce((sum, c) => sum + (c.lengthM * c.grade / 100), 0);
+    climbSummaryEl.innerHTML = t('climbSummary').replace('{km}', fmtNum(totalKm, 1)).replace('{gain}', fmtNum(Math.round(totalGain)));
   }
   document.getElementById('climbModalOverlay').classList.add('open');
 });
