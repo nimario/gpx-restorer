@@ -639,7 +639,7 @@
   }
 
   /* ── 웨이포인트 지도 ── */
-  #wptMapWrap {
+  #wptMapWrap, #s1WptMapWrap {
     display:none;
     background:var(--surface);
     border:1px solid var(--border);
@@ -647,7 +647,7 @@
     padding:20px;
     margin-bottom:24px;
   }
-  #wptMap {
+  #wptMap, #s1WptMap {
     height:320px;
     border-radius:10px;
     border:1px solid var(--border);
@@ -693,7 +693,7 @@
   }
   .wpt-popup .wpt-popup-save { background:var(--accent); color:#04121c; }
   .wpt-popup .wpt-popup-del  { background:var(--loss); color:#fff; }
-  #wptWrap h2, #chartWrap h2, #s1WptWrap h2, #wptMapWrap h2 {
+  #wptWrap h2, #chartWrap h2, #s1WptWrap h2, #wptMapWrap h2, #s1WptMapWrap h2 {
     font-size:.88rem; font-weight:700; color:var(--dim);
     text-transform:uppercase; letter-spacing:.1em;
     margin-bottom:14px;
@@ -1016,7 +1016,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.17</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.18</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1103,6 +1103,13 @@
 
   <div id="stravaResult">
     <p id="stravaResultText"></p>
+  </div>
+
+  <!-- Map -->
+  <div id="s1WptMapWrap">
+    <h2 data-i18n="mapTitle">지도</h2>
+    <div id="s1WptMap"></div>
+    <p class="map-hint" data-i18n="mapHint">지도를 클릭하면 가장 가까운 트랙 지점에 웨이포인트가 생성됩니다. 마커를 클릭해 이름·유형을 수정하거나 삭제할 수 있고, 드래그하면 위치를 옮길 수 있습니다.</p>
   </div>
 
   <div id="s1WptHeadRow" class="wpt-head-row">
@@ -1326,7 +1333,7 @@
 
 </main>
 
-<footer id="footerText">v3.17 (2026.09.08) · Made by 오동도</footer>
+<footer id="footerText">v3.18 (2026.09.08) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1626,7 +1633,7 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.17';
+const APP_VERSION = 'v3.18';
 const APP_DATE = '2026.09.08';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
@@ -1905,6 +1912,7 @@ function tunnelWaypointLabel(name) {
   const s1CsvBtn       = document.getElementById('s1BtnCsv');
   const s1WptList      = document.getElementById('s1WptList');
   const s1WptWrap      = document.getElementById('s1WptWrap');
+  const s1WptMapWrap   = document.getElementById('s1WptMapWrap');
   const s1WptHeadRow   = document.getElementById('s1WptHeadRow');
   const s1WptSaveBar   = document.getElementById('s1WptSaveBar');
   const s1WptSaveCount = document.getElementById('s1WptSaveCount');
@@ -2054,6 +2062,7 @@ function tunnelWaypointLabel(name) {
 
   function s1RenderWaypoints() {
     s1WptWrap.style.display = 'block';
+    s1RenderWptMap();
     if (!s1Waypoints.length) {
       s1WptList.innerHTML = `<p class="wpt-empty" data-i18n="wptEmpty">${t('wptEmpty')}</p>`;
       return;
@@ -2616,6 +2625,161 @@ function tunnelWaypointLabel(name) {
     s1RenderWaypoints();
   });
 
+  // ═══════════════════════════════════════════════════════
+  //  웨이포인트 지도 (① 스트라바 보정 탭) — 카카오맵
+  // ═══════════════════════════════════════════════════════
+  let s1WptMap = null, s1WptMapTrackLayer = null, s1WptMapMarkers = [], s1WptMapOverlay = null;
+
+  function s1WptMapMarkerImage(type) {
+    const emoji = wptIcon(type);
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30">'
+      + '<circle cx="15" cy="15" r="13" fill="#1a2740" stroke="#38bdf8" stroke-width="2"/>'
+      + '<text x="15" y="20" font-size="15" text-anchor="middle">' + emoji + '</text>'
+      + '</svg>';
+    const src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    return new kakao.maps.MarkerImage(src, new kakao.maps.Size(30, 30), { offset: new kakao.maps.Point(15, 15) });
+  }
+
+  function s1EnsureWptMap() {
+    if (s1WptMap) return;
+    if (typeof kakao === 'undefined' || !kakao.maps) return; // SDK 로딩 실패(도메인 미등록 등) 시 조용히 포기
+    s1WptMap = new kakao.maps.Map(document.getElementById('s1WptMap'), {
+      center: new kakao.maps.LatLng(37.5665, 126.9780),
+      level: 7
+    });
+    kakao.maps.event.addListener(s1WptMap, 'click', s1OnWptMapClick);
+  }
+
+  function s1CloseWptMapOverlay() {
+    if (s1WptMapOverlay) { s1WptMapOverlay.setMap(null); s1WptMapOverlay = null; }
+  }
+
+  function s1OnWptMapClick(mouseEvent) {
+    if (!s1Points.length) return;
+    const latlng = mouseEvent.latLng;
+    const idx = s1NearestIdx(s1Points, latlng.getLat(), latlng.getLng());
+    const p = s1Points[idx];
+    if (hasCoordCollision(p.lat, p.lon)) return; // 이미 그 자리에 웨이포인트가 있음
+
+    const wpt = {
+      lat: p.lat, lon: p.lon, name: t('mapNewWptName'), type: 'Generic',
+      arrIdx: idx, km: s1CumDist[idx] / 1000, ele: p.ele
+    };
+    s1Waypoints.push(wpt);
+    s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
+    s1RenderWaypoints();
+
+    const newIdx = s1Waypoints.indexOf(wpt);
+    const marker = s1WptMapMarkers[newIdx];
+    if (marker) s1OpenWptMapPopup(marker, wpt);
+  }
+
+  function s1WptMapPopupEl(w) {
+    const optionsHtml = WPT_TYPE_OPTIONS.map(o =>
+      `<option value="${o.value}"${o.value.toLowerCase() === (w.type || '').toLowerCase() ? ' selected' : ''}>${o.label}</option>`
+    ).join('');
+    const box = document.createElement('div');
+    box.className = 'wpt-popup-box';
+    box.innerHTML = `
+      <div class="wpt-popup">
+        <input type="text" class="wpt-popup-name" value="${escapeAttr(w.name)}" placeholder="${t('mapPopupNamePh')}" autocomplete="off">
+        <select class="wpt-popup-type">${optionsHtml}</select>
+        <div class="wpt-popup-btns">
+          <button type="button" class="wpt-popup-save">${t('mapSave')}</button>
+          <button type="button" class="wpt-popup-del">${t('mapDelete')}</button>
+        </div>
+      </div>`;
+
+    box.querySelector('.wpt-popup-save').addEventListener('click', () => {
+      const newName = box.querySelector('.wpt-popup-name').value.trim();
+      if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(newName)) { showSError(t('errIllegalWptChar')); return; }
+      hideSError();
+      const curIdx = s1Waypoints.indexOf(w);
+      if (curIdx === -1) return;
+      if (newName) s1Waypoints[curIdx].name = newName;
+      s1Waypoints[curIdx].type = box.querySelector('.wpt-popup-type').value;
+      s1CloseWptMapOverlay();
+      s1RenderWaypoints();
+    });
+
+    box.querySelector('.wpt-popup-del').addEventListener('click', () => {
+      const curIdx = s1Waypoints.indexOf(w);
+      if (curIdx === -1) return;
+      s1Waypoints.splice(curIdx, 1);
+      if (s1EditingWptIdx === curIdx) s1EditingWptIdx = null;
+      const newSel = new Set();
+      s1SelectedWpt.forEach(i2 => { if (i2 < curIdx) newSel.add(i2); else if (i2 > curIdx) newSel.add(i2 - 1); });
+      s1SelectedWpt = newSel;
+      s1CloseWptMapOverlay();
+      s1RenderWaypoints();
+      s1UpdateSaveBar();
+    });
+
+    return box;
+  }
+
+  function s1OpenWptMapPopup(marker, w) {
+    s1CloseWptMapOverlay();
+    s1WptMapOverlay = new kakao.maps.CustomOverlay({
+      position: marker.getPosition(),
+      content: s1WptMapPopupEl(w),
+      yAnchor: 1.25,
+      zIndex: 10
+    });
+    s1WptMapOverlay.setMap(s1WptMap);
+  }
+
+  function s1RenderWptMap() {
+    if (!s1EasterEgg) { s1WptMapWrap.style.display = 'none'; return; } // 매개변수 "오동도짱" 입력 시에만 노출
+    s1WptMapWrap.style.display = 'block';
+    if (typeof kakao === 'undefined' || !kakao.maps) return;
+    if (!s1Points.length) {
+      s1CloseWptMapOverlay();
+      if (s1WptMapTrackLayer) { s1WptMapTrackLayer.setMap(null); s1WptMapTrackLayer = null; }
+      s1WptMapMarkers.forEach(m => m.setMap(null));
+      s1WptMapMarkers = [];
+      return;
+    }
+
+    s1EnsureWptMap();
+    if (!s1WptMap) return;
+    s1CloseWptMapOverlay();
+    s1WptMap.relayout();
+
+    const path = s1Points.map(p => new kakao.maps.LatLng(p.lat, p.lon));
+    if (s1WptMapTrackLayer) s1WptMapTrackLayer.setMap(null);
+    s1WptMapTrackLayer = new kakao.maps.Polyline({
+      path, strokeWeight: 3, strokeColor: '#e63946', strokeOpacity: 1, strokeStyle: 'solid'
+    });
+    s1WptMapTrackLayer.setMap(s1WptMap);
+
+    const bounds = new kakao.maps.LatLngBounds();
+    path.forEach(p => bounds.extend(p));
+    s1WptMap.setBounds(bounds);
+
+    s1WptMapMarkers.forEach(m => m.setMap(null));
+    s1WptMapMarkers = s1Waypoints.map(w => {
+      const marker = new kakao.maps.Marker({
+        position: new kakao.maps.LatLng(w.lat, w.lon),
+        image: s1WptMapMarkerImage(w.type),
+        draggable: true
+      });
+      kakao.maps.event.addListener(marker, 'click', () => s1OpenWptMapPopup(marker, w));
+      kakao.maps.event.addListener(marker, 'dragend', () => {
+        const pos = marker.getPosition();
+        const idx = s1NearestIdx(s1Points, pos.getLat(), pos.getLng());
+        const p = s1Points[idx];
+        const curIdx = s1Waypoints.indexOf(w);
+        if (curIdx === -1) return;
+        s1Waypoints[curIdx] = { ...w, lat: p.lat, lon: p.lon, arrIdx: idx, km: s1CumDist[idx] / 1000, ele: p.ele };
+        s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
+        s1RenderWaypoints();
+      });
+      marker.setMap(s1WptMap);
+      return marker;
+    });
+  }
+
   // ── 홈 버튼 리셋 훅 (전역 goHome()에서 호출) ──
   window.s1Reset = function () {
     pendingFile = null;
@@ -2639,6 +2803,7 @@ function tunnelWaypointLabel(name) {
     s1Param.value = '';
     s1Thresh.value = 0; s1ThreshVal.textContent = '0 m';
     if (s1Chart) { s1Chart.destroy(); s1Chart = null; }
+    s1RenderWptMap();
   };
 })();
 
@@ -2688,7 +2853,7 @@ paramInput.addEventListener('input', () => {
   const newMode = paramInput.value.trim() === '오동도짱';
   if (newMode === easterEggMode) return;
   easterEggMode = newMode;
-  if (waypoints.length) renderWaypoints();
+  if (points.length) renderWaypoints();
 });
 
 runBtn.addEventListener('click', () => {
@@ -2834,7 +2999,6 @@ function process(text, fname, format) {
   exportBar.style.display = 'flex';
   controlBar.style.display = 'flex';
   wptHeadRow.style.display = 'flex';
-  wptMapWrap.style.display = 'block';
   renderStats(s);
   renderWaypoints();
   drawChart();
@@ -3578,6 +3742,8 @@ function openWptMapPopup(marker, w) {
 }
 
 function renderWptMap() {
+  if (!easterEggMode) { wptMapWrap.style.display = 'none'; return; } // 매개변수 "오동도짱" 입력 시에만 노출
+  wptMapWrap.style.display = 'block';
   if (typeof kakao === 'undefined' || !kakao.maps) return; // SDK 로딩 실패(도메인 미등록 등) 시 조용히 포기
   if (!points.length) {
     closeWptMapOverlay();
