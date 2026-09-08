@@ -6,6 +6,7 @@
 <title>GPX 원본고도 복원기</title>
 <meta name="color-scheme" content="dark">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=087df90dc4fa46d895cf2b1e374d3eff"></script>
 <style>
   :root {
     --bg:       #0b0f14;
@@ -636,7 +637,63 @@
     padding:20px;
     margin-bottom:18px;
   }
-  #wptWrap h2, #chartWrap h2, #s1WptWrap h2 {
+
+  /* ── 웨이포인트 지도 ── */
+  #wptMapWrap {
+    display:none;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:24px;
+  }
+  #wptMap {
+    height:320px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:var(--card);
+  }
+  .map-hint {
+    margin-top:10px;
+    font-size:.78rem;
+    color:var(--dim);
+    line-height:1.5;
+  }
+  .wpt-popup-box {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:10px;
+    box-shadow:0 4px 16px rgba(0,0,0,.4);
+    margin-bottom:10px;
+  }
+  .wpt-popup { min-width:180px; }
+  .wpt-popup select, .wpt-popup input[type="text"] {
+    width:100%;
+    box-sizing:border-box;
+    margin-bottom:8px;
+    padding:7px 8px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:var(--surface);
+    color:var(--text);
+    font-size:.85rem;
+    font-family:inherit;
+  }
+  .wpt-popup .wpt-popup-btns { display:flex; gap:8px; }
+  .wpt-popup button {
+    flex:1;
+    padding:7px 0;
+    border-radius:8px;
+    border:none;
+    font-size:.82rem;
+    font-weight:700;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .wpt-popup .wpt-popup-save { background:var(--accent); color:#04121c; }
+  .wpt-popup .wpt-popup-del  { background:var(--loss); color:#fff; }
+  #wptWrap h2, #chartWrap h2, #s1WptWrap h2, #wptMapWrap h2 {
     font-size:.88rem; font-weight:700; color:var(--dim);
     text-transform:uppercase; letter-spacing:.1em;
     margin-bottom:14px;
@@ -959,7 +1016,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.16</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.17</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1201,6 +1258,13 @@
   </div>
 </div>
 
+<!-- Map -->
+<div id="wptMapWrap">
+  <h2 data-i18n="mapTitle">지도</h2>
+  <div id="wptMap"></div>
+  <p class="map-hint" data-i18n="mapHint">지도를 클릭하면 가장 가까운 트랙 지점에 웨이포인트가 생성됩니다. 마커를 클릭해 이름·유형을 수정하거나 삭제할 수 있고, 드래그하면 위치를 옮길 수 있습니다.</p>
+</div>
+
 <!-- Waypoints -->
 <div id="wptHeadRow" class="wpt-head-row">
   <h2 data-i18n="wptTitle">웨이포인트</h2>
@@ -1262,7 +1326,7 @@
 
 </main>
 
-<footer id="footerText">v3.16 (2026.09.03) · Made by 오동도</footer>
+<footer id="footerText">v3.17 (2026.09.08) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1329,6 +1393,12 @@ const I18N = {
     infoClose:'닫기',
     ridingazuaLabel:'라이딩가즈아',
     authorName:'오동도',
+    mapTitle:'지도',
+    mapHint:'지도를 클릭하면 가장 가까운 트랙 지점에 웨이포인트가 생성됩니다. 마커를 클릭해 이름·유형을 수정하거나 삭제할 수 있고, 드래그하면 위치를 옮길 수 있습니다.',
+    mapNewWptName:'새 웨이포인트',
+    mapPopupNamePh:'이름 입력',
+    mapSave:'저장',
+    mapDelete:'삭제',
     wptTitle:'웨이포인트',
     wptEmpty:'이 파일엔 웨이포인트가 없습니다. 오르막 자동 감지로 새로 만들 수 있어요.',
     s1ChartTitle:'고도 프로파일',
@@ -1415,6 +1485,12 @@ const I18N = {
     infoClose:'Close',
     ridingazuaLabel:'ridingazua',
     authorName:'Odongdo',
+    mapTitle:'Map',
+    mapHint:'Click the map to create a waypoint at the nearest track point. Click a marker to rename/change its type or delete it, or drag it to move.',
+    mapNewWptName:'New waypoint',
+    mapPopupNamePh:'Enter name',
+    mapSave:'Save',
+    mapDelete:'Delete',
     wptTitle:'Waypoints',
     wptEmpty:'This file has no waypoints. You can create some with Auto-detect Climbs.',
     s1ChartTitle:'Elevation Profile',
@@ -1500,6 +1576,12 @@ const I18N = {
     threshInfoText:'スライダー横の数値は、ノイズフィルターの閾値をメートル(m)単位で示したものです — 右に動かすほど「この値未満の上下は無視する」基準が大きくなります。上部のメインカード(ファイル元値)は変わらず、すぐ下の参考用の獲得標高・下降標高の数値にのみ反映されます。「0 m」はフィルターなし、つまりファイルの元の値のままという意味です。',
     infoClose:'閉じる',
     ridingazuaLabel:'ridingazua',
+    mapTitle:'地図',
+    mapHint:'地図をクリックすると、最も近いトラック地点にウェイポイントが作成されます。マーカーをクリックすると名前・タイプの変更や削除ができ、ドラッグすると位置を移動できます。',
+    mapNewWptName:'新しいウェイポイント',
+    mapPopupNamePh:'名前を入力',
+    mapSave:'保存',
+    mapDelete:'削除',
     wptTitle:'ウェイポイント',
     wptEmpty:'このファイルにはウェイポイントがありません。上り坂自動検出で作成できます。',
     s1ChartTitle:'標高プロファイル',
@@ -1544,8 +1626,8 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.16';
-const APP_DATE = '2026.09.03';
+const APP_VERSION = 'v3.17';
+const APP_DATE = '2026.09.08';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
   document.getElementById('footerText').textContent =
@@ -1622,6 +1704,7 @@ const exportBar      = document.getElementById('exportBar');
 const controlBar     = document.getElementById('controlBar');
 const statsGrid      = document.getElementById('statsGrid');
 const wptWrap        = document.getElementById('wptWrap');
+const wptMapWrap     = document.getElementById('wptMapWrap');
 const wptHeadRow     = document.getElementById('wptHeadRow');
 const wptSaveBar     = document.getElementById('wptSaveBar');
 const wptSaveCount   = document.getElementById('wptSaveCount');
@@ -2621,7 +2704,7 @@ runBtn.addEventListener('click', () => {
 
 function hideResults() {
   lastResult = null;
-  [restoreEl, exportBar, controlBar, statsGrid, wptWrap, wptHeadRow, wptSaveBar, chartWrap, runBtn, courseNameBar]
+  [restoreEl, exportBar, controlBar, statsGrid, wptMapWrap, wptWrap, wptHeadRow, wptSaveBar, chartWrap, runBtn, courseNameBar]
     .forEach(el => el.style.display = 'none');
 }
 
@@ -2751,6 +2834,7 @@ function process(text, fname, format) {
   exportBar.style.display = 'flex';
   controlBar.style.display = 'flex';
   wptHeadRow.style.display = 'flex';
+  wptMapWrap.style.display = 'block';
   renderStats(s);
   renderWaypoints();
   drawChart();
@@ -3245,6 +3329,7 @@ function updateSaveBar() {
 
 function renderWaypoints() {
   wptWrap.style.display = 'block';
+  renderWptMap();
   if (!waypoints.length) {
     wptList.innerHTML = `<p class="wpt-empty" data-i18n="wptEmpty">${t('wptEmpty')}</p>`;
     return;
@@ -3387,6 +3472,163 @@ function wptShowSaveToast(msg) {
   wptSaveCount.textContent = msg;
   wptSaveBar.style.display = 'flex';
   setTimeout(() => { if (selectedWpt.size === 0) wptSaveBar.style.display = 'none'; }, 3500);
+}
+
+// ═══════════════════════════════════════════════════════
+//  웨이포인트 지도 (② 원본고도 복원 탭) — 카카오맵
+// ═══════════════════════════════════════════════════════
+let wptMap = null, wptMapTrackLayer = null, wptMapMarkers = [], wptMapOverlay = null;
+
+function wptMapMarkerImage(type) {
+  const emoji = wptIcon(type);
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30">'
+    + '<circle cx="15" cy="15" r="13" fill="#1a2740" stroke="#38bdf8" stroke-width="2"/>'
+    + '<text x="15" y="20" font-size="15" text-anchor="middle">' + emoji + '</text>'
+    + '</svg>';
+  const src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  return new kakao.maps.MarkerImage(src, new kakao.maps.Size(30, 30), { offset: new kakao.maps.Point(15, 15) });
+}
+
+function ensureWptMap() {
+  if (wptMap) return;
+  if (typeof kakao === 'undefined' || !kakao.maps) return; // SDK 로딩 실패 시 조용히 포기 (도메인 미등록 등)
+  wptMap = new kakao.maps.Map(document.getElementById('wptMap'), {
+    center: new kakao.maps.LatLng(37.5665, 126.9780),
+    level: 7
+  });
+  kakao.maps.event.addListener(wptMap, 'click', onWptMapClick);
+}
+
+function closeWptMapOverlay() {
+  if (wptMapOverlay) { wptMapOverlay.setMap(null); wptMapOverlay = null; }
+}
+
+function onWptMapClick(mouseEvent) {
+  if (!points.length) return;
+  const latlng = mouseEvent.latLng;
+  const idx = nearestIdx(latlng.getLat(), latlng.getLng());
+  const p = points[idx];
+  if (hasCoordCollisionT2(p.lat, p.lon)) return; // 이미 그 자리에 웨이포인트가 있음
+
+  const wpt = {
+    latStr: String(p.lat), lonStr: String(p.lon),
+    secIdx: '0', ptIdx: idx, arrIdx: idx,
+    typeAttr: 'Generic', nameRaw: escapeHtml(t('mapNewWptName')), noteRaw: '',
+    hadEle: true, eleStr: String(p.ele),
+    km: cumDist[idx] / 1000, ele: p.ele
+  };
+  waypoints.push(wpt);
+  waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
+  renderWaypoints();
+
+  const newIdx = waypoints.indexOf(wpt);
+  const marker = wptMapMarkers[newIdx];
+  if (marker) openWptMapPopup(marker, wpt);
+}
+
+function openWptMapPopup(marker, w) {
+  closeWptMapOverlay();
+  const optionsHtml = WPT_TYPE_OPTIONS.map(o =>
+    `<option value="${o.value}"${o.value.toLowerCase() === (w.typeAttr || '').toLowerCase() ? ' selected' : ''}>${o.label}</option>`
+  ).join('');
+  const box = document.createElement('div');
+  box.className = 'wpt-popup-box';
+  box.innerHTML = `
+    <div class="wpt-popup">
+      <input type="text" class="wpt-popup-name" value="${escapeAttr(decodeXml(w.nameRaw))}" placeholder="${t('mapPopupNamePh')}" autocomplete="off">
+      <select class="wpt-popup-type">${optionsHtml}</select>
+      <div class="wpt-popup-btns">
+        <button type="button" class="wpt-popup-save">${t('mapSave')}</button>
+        <button type="button" class="wpt-popup-del">${t('mapDelete')}</button>
+      </div>
+    </div>`;
+
+  box.querySelector('.wpt-popup-save').addEventListener('click', () => {
+    const newName = box.querySelector('.wpt-popup-name').value.trim();
+    if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(newName)) { showError(t('errIllegalWptChar')); return; }
+    hideError();
+    const curIdx = waypoints.indexOf(w);
+    if (curIdx === -1) return;
+    if (newName) waypoints[curIdx].nameRaw = escapeHtml(newName);
+    waypoints[curIdx].typeAttr = box.querySelector('.wpt-popup-type').value;
+    closeWptMapOverlay();
+    renderWaypoints();
+  });
+
+  box.querySelector('.wpt-popup-del').addEventListener('click', () => {
+    const curIdx = waypoints.indexOf(w);
+    if (curIdx === -1) return;
+    waypoints.splice(curIdx, 1);
+    if (editingWptIdx === curIdx) editingWptIdx = null;
+    const newSel = new Set();
+    selectedWpt.forEach(i2 => { if (i2 < curIdx) newSel.add(i2); else if (i2 > curIdx) newSel.add(i2 - 1); });
+    selectedWpt = newSel;
+    closeWptMapOverlay();
+    renderWaypoints();
+    updateSaveBar();
+  });
+
+  wptMapOverlay = new kakao.maps.CustomOverlay({
+    position: marker.getPosition(),
+    content: box,
+    yAnchor: 1.25,
+    zIndex: 10
+  });
+  wptMapOverlay.setMap(wptMap);
+}
+
+function renderWptMap() {
+  if (typeof kakao === 'undefined' || !kakao.maps) return; // SDK 로딩 실패(도메인 미등록 등) 시 조용히 포기
+  if (!points.length) {
+    closeWptMapOverlay();
+    if (wptMapTrackLayer) { wptMapTrackLayer.setMap(null); wptMapTrackLayer = null; }
+    wptMapMarkers.forEach(m => m.setMap(null));
+    wptMapMarkers = [];
+    return;
+  }
+
+  ensureWptMap();
+  if (!wptMap) return;
+  closeWptMapOverlay();
+  wptMap.relayout();
+
+  const path = points.map(p => new kakao.maps.LatLng(p.lat, p.lon));
+  if (wptMapTrackLayer) wptMapTrackLayer.setMap(null);
+  wptMapTrackLayer = new kakao.maps.Polyline({
+    path, strokeWeight: 3, strokeColor: '#e63946', strokeOpacity: 1, strokeStyle: 'solid'
+  });
+  wptMapTrackLayer.setMap(wptMap);
+
+  const bounds = new kakao.maps.LatLngBounds();
+  path.forEach(p => bounds.extend(p));
+  wptMap.setBounds(bounds);
+
+  wptMapMarkers.forEach(m => m.setMap(null));
+  wptMapMarkers = waypoints.map(w => {
+    const marker = new kakao.maps.Marker({
+      position: new kakao.maps.LatLng(parseFloat(w.latStr), parseFloat(w.lonStr)),
+      image: wptMapMarkerImage(w.typeAttr),
+      draggable: true
+    });
+    kakao.maps.event.addListener(marker, 'click', () => openWptMapPopup(marker, w));
+    kakao.maps.event.addListener(marker, 'dragend', () => {
+      const pos = marker.getPosition();
+      const idx = nearestIdx(pos.getLat(), pos.getLng());
+      const p = points[idx];
+      const curIdx = waypoints.indexOf(w);
+      if (curIdx === -1) return;
+      waypoints[curIdx] = {
+        ...w, latStr: String(p.lat), lonStr: String(p.lon),
+        secIdx: '0', ptIdx: idx, arrIdx: idx,
+        hadEle: true, eleStr: String(p.ele),
+        km: cumDist[idx] / 1000, ele: p.ele
+      };
+      waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
+      renderWaypoints();
+    });
+    marker.setMap(wptMap);
+    return marker;
+  });
 }
 
 
