@@ -650,10 +650,26 @@
     margin-bottom:24px;
   }
   #wptMap, #s1WptMap {
+    position:relative;
     height:320px;
     border-radius:10px;
     border:1px solid var(--border);
     background:var(--card);
+  }
+  .wpt-map-tooltip {
+    position:absolute;
+    display:none;
+    pointer-events:none;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:4px 8px;
+    font-size:.74rem;
+    font-weight:700;
+    color:var(--text);
+    white-space:nowrap;
+    z-index:1000;
+    transform:translate(12px, -50%);
   }
   .wpt-map-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
   .wpt-map-head h2 { margin-bottom:0; }
@@ -1033,7 +1049,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.20</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.21</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1362,7 +1378,7 @@
 
 </main>
 
-<footer id="footerText">v3.20 (2026.09.09) · Made by 오동도</footer>
+<footer id="footerText">v3.21 (2026.09.09) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1665,7 +1681,7 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.20';
+const APP_VERSION = 'v3.21';
 const APP_DATE = '2026.09.09';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
@@ -2806,6 +2822,28 @@ function tunnelWaypointLabel(name) {
     s1RenderWaypoints();
   }
 
+  // ── 트랙 위에 마우스 올리면 거리·해발고도 툴팁 ──
+  let s1WptMapTooltipEl = null;
+  function s1WptMapEnsureTooltip() {
+    if (s1WptMapTooltipEl) return s1WptMapTooltipEl;
+    s1WptMapTooltipEl = document.createElement('div');
+    s1WptMapTooltipEl.className = 'wpt-map-tooltip';
+    document.getElementById('s1WptMap').appendChild(s1WptMapTooltipEl);
+    return s1WptMapTooltipEl;
+  }
+  function s1WptMapShowTooltip(x, y, idx) {
+    const p = s1Points[idx];
+    if (!p) return;
+    const el = s1WptMapEnsureTooltip();
+    el.textContent = fmtNum(s1CumDist[idx] / 1000, 1) + ' km · ' + Math.round(p.ele) + ' m';
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    el.style.display = 'block';
+  }
+  function s1WptMapHideTooltip() {
+    if (s1WptMapTooltipEl) s1WptMapTooltipEl.style.display = 'none';
+  }
+
   // ── 카카오맵 ──
   function s1EnsureWptMap() {
     if (s1WptMap) return;
@@ -2861,6 +2899,12 @@ function tunnelWaypointLabel(name) {
       path, strokeWeight: 3, strokeColor: '#e63946', strokeOpacity: 1, strokeStyle: 'solid'
     });
     s1WptMapTrackLayer.setMap(s1WptMap);
+    kakao.maps.event.addListener(s1WptMapTrackLayer, 'mousemove', mouseEvent => {
+      const idx = s1NearestIdx(s1Points, mouseEvent.latLng.getLat(), mouseEvent.latLng.getLng());
+      const pt = s1WptMap.getProjection().containerPointFromCoords(mouseEvent.latLng);
+      s1WptMapShowTooltip(pt.x, pt.y, idx);
+    });
+    kakao.maps.event.addListener(s1WptMapTrackLayer, 'mouseout', s1WptMapHideTooltip);
 
     if (isNewTrack) {
       const bounds = new kakao.maps.LatLngBounds();
@@ -2920,6 +2964,12 @@ function tunnelWaypointLabel(name) {
     const latlngs = s1Points.map(p => [p.lat, p.lon]);
     if (s1WptMapLTrackLayer) s1WptMapL.removeLayer(s1WptMapLTrackLayer);
     s1WptMapLTrackLayer = L.polyline(latlngs, { color: '#e63946', weight: 3 }).addTo(s1WptMapL);
+    s1WptMapLTrackLayer.on('mousemove', e => {
+      const idx = s1NearestIdx(s1Points, e.latlng.lat, e.latlng.lng);
+      const pt = s1WptMapL.latLngToContainerPoint(e.latlng);
+      s1WptMapShowTooltip(pt.x, pt.y, idx);
+    });
+    s1WptMapLTrackLayer.on('mouseout', s1WptMapHideTooltip);
     if (isNewTrack) {
       s1WptMapL.fitBounds(s1WptMapLTrackLayer.getBounds(), { padding: [20, 20] });
       s1WptMapLFitTarget = s1Points;
@@ -2943,6 +2993,7 @@ function tunnelWaypointLabel(name) {
     s1CloseWptMapOverlay();
     s1WptMap = null; s1WptMapTrackLayer = null; s1WptMapMarkers = []; s1WptMapFitTarget = null;
     s1WptMapL = null; s1WptMapLTrackLayer = null; s1WptMapLMarkerGroup = null; s1WptMapLMarkers = []; s1WptMapLFitTarget = null;
+    s1WptMapTooltipEl = null; // 컨테이너를 비우므로 다음 렌더링 때 새로 생성됨
     const el = document.getElementById('s1WptMap');
     if (el) el.innerHTML = '';
   }
@@ -3999,6 +4050,28 @@ function handleWptMapDrag(w, lat, lng) {
   renderWaypoints();
 }
 
+// ── 트랙 위에 마우스 올리면 거리·해발고도 툴팁 ──
+let wptMapTooltipEl = null;
+function wptMapEnsureTooltip() {
+  if (wptMapTooltipEl) return wptMapTooltipEl;
+  wptMapTooltipEl = document.createElement('div');
+  wptMapTooltipEl.className = 'wpt-map-tooltip';
+  document.getElementById('wptMap').appendChild(wptMapTooltipEl);
+  return wptMapTooltipEl;
+}
+function wptMapShowTooltip(x, y, idx) {
+  const p = points[idx];
+  if (!p) return;
+  const el = wptMapEnsureTooltip();
+  el.textContent = fmtNum(cumDist[idx] / 1000, 1) + ' km · ' + Math.round(p.ele) + ' m';
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.style.display = 'block';
+}
+function wptMapHideTooltip() {
+  if (wptMapTooltipEl) wptMapTooltipEl.style.display = 'none';
+}
+
 // ── 카카오맵 ──
 function ensureWptMap() {
   if (wptMap) return;
@@ -4054,6 +4127,12 @@ function renderWptMapKakao() {
     path, strokeWeight: 3, strokeColor: '#e63946', strokeOpacity: 1, strokeStyle: 'solid'
   });
   wptMapTrackLayer.setMap(wptMap);
+  kakao.maps.event.addListener(wptMapTrackLayer, 'mousemove', mouseEvent => {
+    const idx = nearestIdx(mouseEvent.latLng.getLat(), mouseEvent.latLng.getLng());
+    const pt = wptMap.getProjection().containerPointFromCoords(mouseEvent.latLng);
+    wptMapShowTooltip(pt.x, pt.y, idx);
+  });
+  kakao.maps.event.addListener(wptMapTrackLayer, 'mouseout', wptMapHideTooltip);
 
   if (isNewTrack) {
     const bounds = new kakao.maps.LatLngBounds();
@@ -4113,6 +4192,12 @@ function renderWptMapOsm() {
   const latlngs = points.map(p => [p.lat, p.lon]);
   if (wptMapLTrackLayer) wptMapL.removeLayer(wptMapLTrackLayer);
   wptMapLTrackLayer = L.polyline(latlngs, { color: '#e63946', weight: 3 }).addTo(wptMapL);
+  wptMapLTrackLayer.on('mousemove', e => {
+    const idx = nearestIdx(e.latlng.lat, e.latlng.lng);
+    const pt = wptMapL.latLngToContainerPoint(e.latlng);
+    wptMapShowTooltip(pt.x, pt.y, idx);
+  });
+  wptMapLTrackLayer.on('mouseout', wptMapHideTooltip);
   if (isNewTrack) {
     wptMapL.fitBounds(wptMapLTrackLayer.getBounds(), { padding: [20, 20] });
     wptMapLFitTarget = points;
@@ -4137,6 +4222,7 @@ function wptMapTeardown() {
   closeWptMapOverlay();
   wptMap = null; wptMapTrackLayer = null; wptMapMarkers = []; wptMapFitTarget = null;
   wptMapL = null; wptMapLTrackLayer = null; wptMapLMarkerGroup = null; wptMapLMarkers = []; wptMapLFitTarget = null;
+  wptMapTooltipEl = null; // 컨테이너를 비우므로 다음 렌더링 때 새로 생성됨
   const el = document.getElementById('wptMap');
   if (el) el.innerHTML = '';
 }
