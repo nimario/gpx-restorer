@@ -1078,7 +1078,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.22</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.23</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1419,7 +1419,7 @@
 
 </main>
 
-<footer id="footerText">v3.22 (2026.09.10) · Made by 오동도</footer>
+<footer id="footerText">v3.23 (2026.09.10) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1731,7 +1731,7 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.22';
+const APP_VERSION = 'v3.23';
 const APP_DATE = '2026.09.10';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
@@ -2789,7 +2789,7 @@ function tunnelWaypointLabel(name) {
   //  (카카오맵은 해외 지역 지도 데이터가 없어 국내 전용, OSM은 전세계 지원)
   // ═══════════════════════════════════════════════════════
   // provider 상태는 ②탭과 전역(wptMapProvider) 공유 — 한 번 고르면 두 탭에 동일 적용
-  let s1WptMap = null, s1WptMapTrackLayer = null, s1WptMapMarkers = [], s1WptMapOverlay = null, s1WptMapFitTarget = null;
+  let s1WptMap = null, s1WptMapTrackLayer = null, s1WptMapTrackHitLayer = null, s1WptMapMarkers = [], s1WptMapOverlay = null, s1WptMapFitTarget = null;
   let s1WptMapL = null, s1WptMapLTrackLayer = null, s1WptMapLMarkerGroup = null, s1WptMapLMarkers = [], s1WptMapLFitTarget = null;
 
   function s1WptMapMarkerImage(type) {
@@ -2983,6 +2983,7 @@ function tunnelWaypointLabel(name) {
     if (!s1Points.length) {
       s1CloseWptMapOverlay();
       if (s1WptMapTrackLayer) { s1WptMapTrackLayer.setMap(null); s1WptMapTrackLayer = null; }
+      if (s1WptMapTrackHitLayer) { s1WptMapTrackHitLayer.setMap(null); s1WptMapTrackHitLayer = null; }
       s1WptMapMarkers.forEach(m => m.setMap(null));
       s1WptMapMarkers = [];
       s1WptMapFitTarget = null;
@@ -3001,12 +3002,19 @@ function tunnelWaypointLabel(name) {
       path, strokeWeight: 3, strokeColor: '#e63946', strokeOpacity: 1, strokeStyle: 'solid'
     });
     s1WptMapTrackLayer.setMap(s1WptMap);
-    kakao.maps.event.addListener(s1WptMapTrackLayer, 'mousemove', mouseEvent => {
+    // 카카오맵은 얇은 선(3px)에 대한 마우스 히트 판정이 부정확해서, 눈에는 안 보이는 굵은 선을 겹쳐 그려
+    // 그쪽에서 mousemove/mouseout을 잡음 (호버 툴팁이 잘 안 뜨던 문제의 원인)
+    if (s1WptMapTrackHitLayer) s1WptMapTrackHitLayer.setMap(null);
+    s1WptMapTrackHitLayer = new kakao.maps.Polyline({
+      path, strokeWeight: 16, strokeColor: '#000000', strokeOpacity: 0.01, strokeStyle: 'solid'
+    });
+    s1WptMapTrackHitLayer.setMap(s1WptMap);
+    kakao.maps.event.addListener(s1WptMapTrackHitLayer, 'mousemove', mouseEvent => {
       const idx = s1NearestIdx(s1Points, mouseEvent.latLng.getLat(), mouseEvent.latLng.getLng());
       const pt = s1WptMap.getProjection().containerPointFromCoords(mouseEvent.latLng);
       s1WptMapShowTooltip(pt.x, pt.y, idx);
     });
-    kakao.maps.event.addListener(s1WptMapTrackLayer, 'mouseout', s1WptMapHideTooltip);
+    kakao.maps.event.addListener(s1WptMapTrackHitLayer, 'mouseout', s1WptMapHideTooltip);
 
     if (isNewTrack) {
       const bounds = new kakao.maps.LatLngBounds();
@@ -3084,7 +3092,7 @@ function tunnelWaypointLabel(name) {
   function s1WptMapTeardown() {
     s1WptMapPendingMarker = null; s1WptMapPendingRemove = null; // 컨테이너 자체를 비우므로 별도 remove 호출은 불필요
     s1CloseWptMapOverlay();
-    s1WptMap = null; s1WptMapTrackLayer = null; s1WptMapMarkers = []; s1WptMapFitTarget = null;
+    s1WptMap = null; s1WptMapTrackLayer = null; s1WptMapTrackHitLayer = null; s1WptMapMarkers = []; s1WptMapFitTarget = null;
     // Leaflet은 .remove()로 컨테이너의 내부 초기화 플래그까지 지워야 다음에 같은 div에 재초기화가 됨
     if (s1WptMapL) s1WptMapL.remove();
     s1WptMapL = null; s1WptMapLTrackLayer = null; s1WptMapLMarkerGroup = null; s1WptMapLMarkers = []; s1WptMapLFitTarget = null;
@@ -4098,7 +4106,7 @@ function wptShowSaveToast(msg) {
 let wptMapProvider = (function () { try { return localStorage.getItem('wptMapProvider') || 'kakao'; } catch (e) { return 'kakao'; } })();
 
 // 카카오맵 상태
-let wptMap = null, wptMapTrackLayer = null, wptMapMarkers = [], wptMapOverlay = null, wptMapFitTarget = null;
+let wptMap = null, wptMapTrackLayer = null, wptMapTrackHitLayer = null, wptMapMarkers = [], wptMapOverlay = null, wptMapFitTarget = null;
 // OSM(Leaflet) 상태
 let wptMapL = null, wptMapLTrackLayer = null, wptMapLMarkerGroup = null, wptMapLMarkers = [], wptMapLFitTarget = null;
 
@@ -4307,6 +4315,7 @@ function renderWptMapKakao() {
   if (!points.length) {
     closeWptMapOverlay();
     if (wptMapTrackLayer) { wptMapTrackLayer.setMap(null); wptMapTrackLayer = null; }
+    if (wptMapTrackHitLayer) { wptMapTrackHitLayer.setMap(null); wptMapTrackHitLayer = null; }
     wptMapMarkers.forEach(m => m.setMap(null));
     wptMapMarkers = [];
     wptMapFitTarget = null;
@@ -4325,12 +4334,19 @@ function renderWptMapKakao() {
     path, strokeWeight: 3, strokeColor: '#e63946', strokeOpacity: 1, strokeStyle: 'solid'
   });
   wptMapTrackLayer.setMap(wptMap);
-  kakao.maps.event.addListener(wptMapTrackLayer, 'mousemove', mouseEvent => {
+  // 카카오맵은 얇은 선(3px)에 대한 마우스 히트 판정이 부정확해서, 눈에는 안 보이는 굵은 선을 겹쳐 그려
+  // 그쪽에서 mousemove/mouseout을 잡음 (호버 툴팁이 잘 안 뜨던 문제의 원인)
+  if (wptMapTrackHitLayer) wptMapTrackHitLayer.setMap(null);
+  wptMapTrackHitLayer = new kakao.maps.Polyline({
+    path, strokeWeight: 16, strokeColor: '#000000', strokeOpacity: 0.01, strokeStyle: 'solid'
+  });
+  wptMapTrackHitLayer.setMap(wptMap);
+  kakao.maps.event.addListener(wptMapTrackHitLayer, 'mousemove', mouseEvent => {
     const idx = nearestIdx(mouseEvent.latLng.getLat(), mouseEvent.latLng.getLng());
     const pt = wptMap.getProjection().containerPointFromCoords(mouseEvent.latLng);
     wptMapShowTooltip(pt.x, pt.y, idx);
   });
-  kakao.maps.event.addListener(wptMapTrackLayer, 'mouseout', wptMapHideTooltip);
+  kakao.maps.event.addListener(wptMapTrackHitLayer, 'mouseout', wptMapHideTooltip);
 
   if (isNewTrack) {
     const bounds = new kakao.maps.LatLngBounds();
@@ -4409,7 +4425,7 @@ function renderWptMapOsm() {
 function wptMapTeardown() {
   wptMapPendingMarker = null; wptMapPendingRemove = null; // 컨테이너 자체를 비우므로 별도 remove 호출은 불필요
   closeWptMapOverlay();
-  wptMap = null; wptMapTrackLayer = null; wptMapMarkers = []; wptMapFitTarget = null;
+  wptMap = null; wptMapTrackLayer = null; wptMapTrackHitLayer = null; wptMapMarkers = []; wptMapFitTarget = null;
   // Leaflet은 .remove()로 컨테이너의 내부 초기화 플래그까지 지워야 다음에 같은 div에 재초기화가 됨
   // (innerHTML만 비우면 "Map container is already initialized" 에러로 재초기화가 조용히 실패함)
   if (wptMapL) wptMapL.remove();
