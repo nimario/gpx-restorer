@@ -749,6 +749,35 @@
   }
   .wpt-popup .wpt-popup-save { background:var(--accent); color:#04121c; }
   .wpt-popup .wpt-popup-del  { background:var(--loss); color:#fff; }
+  .wpt-click-menu { min-width:190px; display:flex; flex-direction:column; }
+  .wpt-menu-item {
+    display:block;
+    width:100%;
+    box-sizing:border-box;
+    text-align:left;
+    padding:9px 10px;
+    border:none;
+    background:none;
+    color:var(--text);
+    font-size:.85rem;
+    font-weight:600;
+    border-radius:8px;
+    cursor:pointer;
+    font-family:inherit;
+    text-decoration:none;
+  }
+  .wpt-menu-item:hover { background:rgba(255,255,255,.08); }
+  .wpt-menu-item.wpt-menu-create { color:var(--accent); font-weight:700; }
+  .wpt-menu-label {
+    font-size:.66rem;
+    font-weight:700;
+    color:var(--dim);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    padding:10px 10px 4px;
+    border-top:1px solid var(--border);
+    margin-top:4px;
+  }
   #wptWrap h2, #chartWrap h2, #s1WptWrap h2, #wptMapWrap h2, #s1WptMapWrap h2 {
     font-size:.88rem; font-weight:700; color:var(--dim);
     text-transform:uppercase; letter-spacing:.1em;
@@ -806,7 +835,9 @@
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
+    cursor:pointer;
   }
+  .wpt-row.wpt-table .wpt-name:hover { text-decoration:underline; }
   .wpt-row.wpt-table .wpt-num,
   .wpt-row.wpt-table .wpt-gain,
   .wpt-row.wpt-table .wpt-loss {
@@ -1078,7 +1109,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.23</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.24</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1419,7 +1450,7 @@
 
 </main>
 
-<footer id="footerText">v3.23 (2026.09.10) · Made by 오동도</footer>
+<footer id="footerText">v3.24 (2026.09.10) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1493,6 +1524,10 @@ const I18N = {
     mapSave:'저장',
     mapCancel:'취소',
     mapLocateFail:'현재 위치를 가져올 수 없습니다.',
+    mapMenuCreate:'📍 웨이포인트 생성',
+    mapMenuExternal:'외부 지도',
+    mapMenuKakaoView:'카카오맵에서 보기',
+    mapMenuKakaoRoadview:'카카오맵에서 로드뷰 보기',
     mapDelete:'삭제',
     wptTitle:'웨이포인트',
     wptEmpty:'이 파일엔 웨이포인트가 없습니다. 오르막 자동 감지로 새로 만들 수 있어요.',
@@ -1589,6 +1624,10 @@ const I18N = {
     mapSave:'Save',
     mapCancel:'Cancel',
     mapLocateFail:'Could not get your current location.',
+    mapMenuCreate:'📍 Create waypoint',
+    mapMenuExternal:'External maps',
+    mapMenuKakaoView:'View in Kakao Map',
+    mapMenuKakaoRoadview:'View in Kakao Roadview',
     mapDelete:'Delete',
     wptTitle:'Waypoints',
     wptEmpty:'This file has no waypoints. You can create some with Auto-detect Climbs.',
@@ -1684,6 +1723,10 @@ const I18N = {
     mapSave:'保存',
     mapCancel:'キャンセル',
     mapLocateFail:'現在地を取得できませんでした。',
+    mapMenuCreate:'📍 ウェイポイント作成',
+    mapMenuExternal:'外部地図',
+    mapMenuKakaoView:'カカオマップで見る',
+    mapMenuKakaoRoadview:'カカオマップでロードビューを見る',
     mapDelete:'削除',
     wptTitle:'ウェイポイント',
     wptEmpty:'このファイルにはウェイポイントがありません。上り坂自動検出で作成できます。',
@@ -1731,7 +1774,7 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.23';
+const APP_VERSION = 'v3.24';
 const APP_DATE = '2026.09.10';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
@@ -2259,7 +2302,29 @@ function tunnelWaypointLabel(name) {
       s1EditingWptIdx = null;
       s1RenderWaypoints();
     } else if (cancelBtn) { s1EditingWptIdx = null; s1RenderWaypoints(); }
+    else {
+      const nameEl = e.target.closest('.wpt-name');
+      if (nameEl) {
+        const row = nameEl.closest('[data-idx]');
+        if (row) s1WptFocusMapOnIdx(parseInt(row.dataset.idx));
+      }
+    }
   });
+
+  // 이름 클릭 시 지도에서 해당 웨이포인트 위치로 이동 + 지도가 보이도록 자동 스크롤
+  function s1WptFocusMapOnIdx(idx) {
+    if (!s1EasterEgg) return;
+    const w = s1Waypoints[idx];
+    if (!w) return;
+    const lat = w.lat, lon = w.lon;
+    if (isNaN(lat) || isNaN(lon)) return;
+    s1WptMapWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (wptMapProvider === 'osm') {
+      if (s1WptMapL) s1WptMapL.setView([lat, lon], Math.max(s1WptMapL.getZoom(), 15));
+    } else {
+      if (s1WptMap) { s1WptMap.setCenter(new kakao.maps.LatLng(lat, lon)); s1WptMap.setLevel(4); }
+    }
+  }
 
   s1WptList.addEventListener('change', e => {
     const chk = e.target.closest('.wpt-check');
@@ -2398,8 +2463,12 @@ function tunnelWaypointLabel(name) {
           if (suffix) { startIdx = suffix.startIdx; lengthM = suffix.lengthM; grade = suffix.grade; score = suffix.score; qualifies = true; }
         }
         if (qualifies) {
+          // 스무딩(이동평균)된 곡선은 실제 정상보다 살짝 일찍 꺾이는 경향이 있어서(끝쪽 몇 개 포인트가 평균에 묻힘),
+          // endIdx 이후로도 원본(비스무딩) 고도가 계속 오르는 동안은 정상 탐색 범위를 넓혀서 진짜 최고점을 찾음
+          let peakSearchEnd = endIdx;
+          while (peakSearchEnd < pts.length - 1 && pts[peakSearchEnd + 1].ele >= pts[peakSearchEnd].ele) peakSearchEnd++;
           let peakIdx = startIdx;
-          for (let m = startIdx; m <= endIdx; m++) if (pts[m].ele > pts[peakIdx].ele) peakIdx = m;
+          for (let m = startIdx; m <= peakSearchEnd; m++) if (pts[m].ele > pts[peakIdx].ele) peakIdx = m;
           climbs.push({ startIdx, endIdx, peakIdx, startKm: cum[startIdx] / 1000, lengthM, grade, score, peakEle: pts[peakIdx].ele });
         }
         i = endIdx + 1;
@@ -2857,12 +2926,27 @@ function tunnelWaypointLabel(name) {
     s1CloseWptMapOverlay();
   }
 
-  function s1WptMapCreatePopupEl(idx, p) {
+  // 지도 클릭 시 바로 생성폼이 아니라, "웨이포인트 생성/외부 지도" 선택 메뉴를 먼저 보여줌.
+  // 같은 box를 계속 재사용하면서 메뉴 ↔ 생성폼 사이만 내용을 바꿔치기함.
+  function s1WptMapRenderClickMenu(box, idx, p) {
+    const kakaoUrl = `https://map.kakao.com/link/map/${encodeURIComponent(t('mapNewWptName'))},${p.lat},${p.lon}`;
+    const roadviewUrl = `https://map.kakao.com/link/roadview/${p.lat},${p.lon}`;
+    box.innerHTML = `
+      <div class="wpt-click-menu">
+        <button type="button" class="wpt-menu-item wpt-menu-create">${t('mapMenuCreate')}</button>
+        <div class="wpt-menu-label">${t('mapMenuExternal')}</div>
+        <a class="wpt-menu-item" href="${kakaoUrl}" target="_blank" rel="noopener">${t('mapMenuKakaoView')}</a>
+        <a class="wpt-menu-item" href="${roadviewUrl}" target="_blank" rel="noopener">${t('mapMenuKakaoRoadview')}</a>
+      </div>`;
+    // stopPropagation 필수 — 안 하면 클릭이 지도까지 버블링돼서 s1HandleWptMapCreate가 또 실행되며
+    // 방금 폼으로 바꾼 걸 무시하고 대기 중인 draft를 통째로 지워버림(팝업이 통째로 사라지는 버그)
+    box.querySelector('.wpt-menu-create').addEventListener('click', e => { e.stopPropagation(); s1WptMapRenderCreateForm(box, idx, p); });
+  }
+
+  function s1WptMapRenderCreateForm(box, idx, p) {
     const optionsHtml = WPT_TYPE_OPTIONS.map(o =>
       `<option value="${o.value}"${o.value === 'Generic' ? ' selected' : ''}>${o.label}</option>`
     ).join('');
-    const box = document.createElement('div');
-    box.className = 'wpt-popup-box';
     box.innerHTML = `
       <div class="wpt-popup">
         <input type="text" class="wpt-popup-name" value="" placeholder="${t('mapPopupNamePh')}" autocomplete="off">
@@ -2891,7 +2975,12 @@ function tunnelWaypointLabel(name) {
     box.querySelector('.wpt-popup-del').addEventListener('click', () => {
       s1WptMapClearPending();
     });
+  }
 
+  function s1WptMapCreatePopupEl(idx, p) {
+    const box = document.createElement('div');
+    box.className = 'wpt-popup-box';
+    s1WptMapRenderClickMenu(box, idx, p);
     return box;
   }
 
@@ -3800,8 +3889,12 @@ function detectClimbs() {
         if (suffix) { startIdx = suffix.startIdx; lengthM = suffix.lengthM; grade = suffix.grade; score = suffix.score; qualifies = true; }
       }
       if (qualifies) {
+        // 스무딩(이동평균)된 곡선은 실제 정상보다 살짝 일찍 꺾이는 경향이 있어서(끝쪽 몇 개 포인트가 평균에 묻힘),
+        // endIdx 이후로도 원본(비스무딩) 고도가 계속 오르는 동안은 정상 탐색 범위를 넓혀서 진짜 최고점을 찾음
+        let peakSearchEnd = endIdx;
+        while (peakSearchEnd < pts.length - 1 && pts[peakSearchEnd + 1].ele >= pts[peakSearchEnd].ele) peakSearchEnd++;
         let peakIdx = startIdx;
-        for (let m = startIdx; m <= endIdx; m++) if (pts[m].ele > pts[peakIdx].ele) peakIdx = m;
+        for (let m = startIdx; m <= peakSearchEnd; m++) if (pts[m].ele > pts[peakIdx].ele) peakIdx = m;
         climbs.push({ startIdx, endIdx, peakIdx, startKm: cum[startIdx] / 1000, lengthM, grade, score, peakEle: pts[peakIdx].ele });
       }
       i = endIdx + 1;
@@ -4061,8 +4154,29 @@ wptList.addEventListener('click', e => {
   } else if (cancelBtn) {
     editingWptIdx = null;
     renderWaypoints();
+  } else {
+    const nameEl = e.target.closest('.wpt-name');
+    if (nameEl) {
+      const row = nameEl.closest('[data-idx]');
+      if (row) wptFocusMapOnIdx(parseInt(row.dataset.idx));
+    }
   }
 });
+
+// 이름 클릭 시 지도에서 해당 웨이포인트 위치로 이동 + 지도가 보이도록 자동 스크롤
+function wptFocusMapOnIdx(idx) {
+  if (!easterEggMode) return;
+  const w = waypoints[idx];
+  if (!w) return;
+  const lat = parseFloat(w.latStr), lon = parseFloat(w.lonStr);
+  if (isNaN(lat) || isNaN(lon)) return;
+  wptMapWrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (wptMapProvider === 'osm') {
+    if (wptMapL) wptMapL.setView([lat, lon], Math.max(wptMapL.getZoom(), 15));
+  } else {
+    if (wptMap) { wptMap.setCenter(new kakao.maps.LatLng(lat, lon)); wptMap.setLevel(4); }
+  }
+}
 
 wptList.addEventListener('change', e => {
   const chk = e.target.closest('.wpt-check');
@@ -4184,12 +4298,27 @@ function wptMapClearPending() {
   closeWptMapOverlay();
 }
 
-function wptMapCreatePopupEl(idx, p) {
+// 지도 클릭 시 바로 생성폼이 아니라, "웨이포인트 생성/외부 지도" 선택 메뉴를 먼저 보여줌.
+// 같은 box를 계속 재사용하면서 메뉴 ↔ 생성폼 사이만 내용을 바꿔치기함.
+function wptMapRenderClickMenu(box, idx, p) {
+  const kakaoUrl = `https://map.kakao.com/link/map/${encodeURIComponent(t('mapNewWptName'))},${p.lat},${p.lon}`;
+  const roadviewUrl = `https://map.kakao.com/link/roadview/${p.lat},${p.lon}`;
+  box.innerHTML = `
+    <div class="wpt-click-menu">
+      <button type="button" class="wpt-menu-item wpt-menu-create">${t('mapMenuCreate')}</button>
+      <div class="wpt-menu-label">${t('mapMenuExternal')}</div>
+      <a class="wpt-menu-item" href="${kakaoUrl}" target="_blank" rel="noopener">${t('mapMenuKakaoView')}</a>
+      <a class="wpt-menu-item" href="${roadviewUrl}" target="_blank" rel="noopener">${t('mapMenuKakaoRoadview')}</a>
+    </div>`;
+  // stopPropagation 필수 — 안 하면 클릭이 지도까지 버블링돼서 handleWptMapCreate가 또 실행되며
+  // 방금 폼으로 바꾼 걸 무시하고 대기 중인 draft를 통째로 지워버림(팝업이 통째로 사라지는 버그)
+  box.querySelector('.wpt-menu-create').addEventListener('click', e => { e.stopPropagation(); wptMapRenderCreateForm(box, idx, p); });
+}
+
+function wptMapRenderCreateForm(box, idx, p) {
   const optionsHtml = WPT_TYPE_OPTIONS.map(o =>
     `<option value="${o.value}"${o.value === 'Generic' ? ' selected' : ''}>${o.label}</option>`
   ).join('');
-  const box = document.createElement('div');
-  box.className = 'wpt-popup-box';
   box.innerHTML = `
     <div class="wpt-popup">
       <input type="text" class="wpt-popup-name" value="" placeholder="${t('mapPopupNamePh')}" autocomplete="off">
@@ -4221,7 +4350,12 @@ function wptMapCreatePopupEl(idx, p) {
   box.querySelector('.wpt-popup-del').addEventListener('click', () => {
     wptMapClearPending();
   });
+}
 
+function wptMapCreatePopupEl(idx, p) {
+  const box = document.createElement('div');
+  box.className = 'wpt-popup-box';
+  wptMapRenderClickMenu(box, idx, p);
   return box;
 }
 
