@@ -691,6 +691,20 @@
     padding:0;
   }
   .wpt-map-tool-btn:hover { color:var(--text); border-color:var(--accent); }
+  /* 전체화면 진입 시 지도 카드 전체를 채우면서 지도 자체(#wptMap)도 남는 세로공간을 다 쓰도록 */
+  #wptMapWrap:fullscreen, #s1WptMapWrap:fullscreen,
+  #wptMapWrap:-webkit-full-screen, #s1WptMapWrap:-webkit-full-screen {
+    display:flex;
+    flex-direction:column;
+    background:var(--bg);
+    padding:16px;
+    overflow:auto;
+  }
+  #wptMapWrap:fullscreen #wptMap, #s1WptMapWrap:fullscreen #s1WptMap,
+  #wptMapWrap:-webkit-full-screen #wptMap, #s1WptMapWrap:-webkit-full-screen #s1WptMap {
+    flex:1 1 auto;
+    height:auto !important;
+  }
   .wpt-map-provider { display:flex; gap:6px; }
   .wpt-map-provider-btn {
     padding:4px 10px;
@@ -1109,7 +1123,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.24</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.25</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1204,7 +1218,8 @@
       <h2 data-i18n="mapTitle">지도</h2>
       <div class="wpt-map-tools">
         <button type="button" class="wpt-map-tool-btn" id="s1WptMapFitBtn" title="전체 보기">⛶</button>
-        <button type="button" class="wpt-map-tool-btn" id="s1WptMapLocateBtn" title="내 위치">📍</button>
+        <button type="button" class="wpt-map-tool-btn" id="s1WptMapLocateBtn" title="내 위치">⌖</button>
+        <button type="button" class="wpt-map-tool-btn" id="s1WptMapFullscreenBtn" title="전체화면">⤢</button>
         <div class="wpt-map-provider">
           <button type="button" class="wpt-map-provider-btn" data-provider="kakao">카카오맵</button>
           <button type="button" class="wpt-map-provider-btn" data-provider="osm">OSM</button>
@@ -1376,7 +1391,8 @@
     <h2 data-i18n="mapTitle">지도</h2>
     <div class="wpt-map-tools">
       <button type="button" class="wpt-map-tool-btn" id="wptMapFitBtn" title="전체 보기">⛶</button>
-      <button type="button" class="wpt-map-tool-btn" id="wptMapLocateBtn" title="내 위치">📍</button>
+      <button type="button" class="wpt-map-tool-btn" id="wptMapLocateBtn" title="내 위치">⌖</button>
+      <button type="button" class="wpt-map-tool-btn" id="wptMapFullscreenBtn" title="전체화면">⤢</button>
       <div class="wpt-map-provider">
         <button type="button" class="wpt-map-provider-btn" data-provider="kakao">카카오맵</button>
         <button type="button" class="wpt-map-provider-btn" data-provider="osm">OSM</button>
@@ -1450,7 +1466,7 @@
 
 </main>
 
-<footer id="footerText">v3.24 (2026.09.10) · Made by 오동도</footer>
+<footer id="footerText">v3.25 (2026.09.10) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1524,6 +1540,8 @@ const I18N = {
     mapSave:'저장',
     mapCancel:'취소',
     mapLocateFail:'현재 위치를 가져올 수 없습니다.',
+    mapFullscreen:'전체화면',
+    mapExitFullscreen:'전체화면 종료',
     mapMenuCreate:'📍 웨이포인트 생성',
     mapMenuExternal:'외부 지도',
     mapMenuKakaoView:'카카오맵에서 보기',
@@ -1624,6 +1642,8 @@ const I18N = {
     mapSave:'Save',
     mapCancel:'Cancel',
     mapLocateFail:'Could not get your current location.',
+    mapFullscreen:'Fullscreen',
+    mapExitFullscreen:'Exit fullscreen',
     mapMenuCreate:'📍 Create waypoint',
     mapMenuExternal:'External maps',
     mapMenuKakaoView:'View in Kakao Map',
@@ -1723,6 +1743,8 @@ const I18N = {
     mapSave:'保存',
     mapCancel:'キャンセル',
     mapLocateFail:'現在地を取得できませんでした。',
+    mapFullscreen:'全画面表示',
+    mapExitFullscreen:'全画面表示を終了',
     mapMenuCreate:'📍 ウェイポイント作成',
     mapMenuExternal:'外部地図',
     mapMenuKakaoView:'カカオマップで見る',
@@ -1774,7 +1796,7 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.24';
+const APP_VERSION = 'v3.25';
 const APP_DATE = '2026.09.10';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
@@ -3258,6 +3280,29 @@ function tunnelWaypointLabel(name) {
   document.getElementById('s1WptMapFitBtn').addEventListener('click', s1WptMapFitToBounds);
   document.getElementById('s1WptMapLocateBtn').addEventListener('click', s1WptMapLocateMe);
 
+  // ── 지도 전체화면 (Fullscreen API) ──
+  function s1WptMapToggleFullscreen() {
+    const inFs = document.fullscreenElement || document.webkitFullscreenElement;
+    if (!inFs) {
+      (s1WptMapWrap.requestFullscreen || s1WptMapWrap.webkitRequestFullscreen)?.call(s1WptMapWrap);
+    } else {
+      (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
+    }
+  }
+  document.getElementById('s1WptMapFullscreenBtn').addEventListener('click', s1WptMapToggleFullscreen);
+  function s1WptMapOnFullscreenChange() {
+    const btn = document.getElementById('s1WptMapFullscreenBtn');
+    const active = (document.fullscreenElement || document.webkitFullscreenElement) === s1WptMapWrap;
+    btn.textContent = active ? '⤡' : '⤢';
+    btn.title = active ? t('mapExitFullscreen') : t('mapFullscreen');
+    setTimeout(() => {
+      if (wptMapProvider === 'osm') { if (s1WptMapL) s1WptMapL.invalidateSize(); }
+      else { if (s1WptMap) s1WptMap.relayout(); }
+    }, 100);
+  }
+  document.addEventListener('fullscreenchange', s1WptMapOnFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', s1WptMapOnFullscreenChange);
+
   // 탭 전환 시 지도를 새로고침할 수 있도록 전역에 노출 (컨테이너가 숨겨진 동안 생성되는 것을 방지)
   window.s1RenderWptMap = s1RenderWptMap;
 
@@ -4635,6 +4680,30 @@ function wptMapLocateMe() {
 
 document.getElementById('wptMapFitBtn').addEventListener('click', wptMapFitToBounds);
 document.getElementById('wptMapLocateBtn').addEventListener('click', wptMapLocateMe);
+
+// ── 지도 전체화면 (Fullscreen API) ──
+function wptMapToggleFullscreen() {
+  const inFs = document.fullscreenElement || document.webkitFullscreenElement;
+  if (!inFs) {
+    (wptMapWrap.requestFullscreen || wptMapWrap.webkitRequestFullscreen)?.call(wptMapWrap);
+  } else {
+    (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
+  }
+}
+document.getElementById('wptMapFullscreenBtn').addEventListener('click', wptMapToggleFullscreen);
+function wptMapOnFullscreenChange() {
+  const btn = document.getElementById('wptMapFullscreenBtn');
+  const active = (document.fullscreenElement || document.webkitFullscreenElement) === wptMapWrap;
+  btn.textContent = active ? '⤡' : '⤢';
+  btn.title = active ? t('mapExitFullscreen') : t('mapFullscreen');
+  // 지도 컨테이너 크기가 바뀌었으니 각 provider에 맞게 리사이즈 반영
+  setTimeout(() => {
+    if (wptMapProvider === 'osm') { if (wptMapL) wptMapL.invalidateSize(); }
+    else { if (wptMap) wptMap.relayout(); }
+  }, 100);
+}
+document.addEventListener('fullscreenchange', wptMapOnFullscreenChange);
+document.addEventListener('webkitfullscreenchange', wptMapOnFullscreenChange);
 
 
 function drawChart() {
