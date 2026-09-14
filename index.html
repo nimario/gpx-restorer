@@ -1132,7 +1132,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.27</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.28</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1477,7 +1477,7 @@
 
 </main>
 
-<footer id="footerText">v3.27 (2026.09.10) · Made by 오동도</footer>
+<footer id="footerText">v3.28 (2026.09.14) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1807,8 +1807,8 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.27';
-const APP_DATE = '2026.09.10';
+const APP_VERSION = 'v3.28';
+const APP_DATE = '2026.09.14';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
   document.getElementById('footerText').textContent =
@@ -2550,6 +2550,21 @@ function tunnelWaypointLabel(name) {
     return s1Waypoints.some(w => Math.abs(w.lat - lat) < 1e-6 && Math.abs(w.lon - lon) < 1e-6);
   }
 
+  // 파일 불러올 때 트랙 시작/끝에 Start/Finish 웨이포인트 자동 생성 (이미 그 자리에 웨이포인트가 있으면 중복 생성 안 함)
+  function s1AddStartFinishWaypoints() {
+    if (s1Points.length < 2) return;
+    const lastIdx = s1Points.length - 1;
+    const first = s1Points[0], last = s1Points[lastIdx];
+    const totalKm = s1CumDist[lastIdx] / 1000;
+    const NEAR_KM = 0.2; // 이 거리 안에 이미 웨이포인트가 있으면 "시작/끝 표시가 이미 있다"고 봄 (좌표 완전일치가 아니어도 됨)
+    if (!s1Waypoints.some(w => w.km <= NEAR_KM)) {
+      s1Waypoints.push({ lat: first.lat, lon: first.lon, name: 'Start', type: 'Generic', arrIdx: 0, km: 0, ele: first.ele });
+    }
+    if (!s1Waypoints.some(w => totalKm - w.km <= NEAR_KM)) {
+      s1Waypoints.push({ lat: last.lat, lon: last.lon, name: 'Finish', type: 'Generic', arrIdx: lastIdx, km: totalKm, ele: last.ele });
+    }
+  }
+
   async function s1ResolveClimbWaypoint(peakIdx) {
     const p = s1Points[peakIdx];
     const info = await fetchPlaceInfo(p.lat, p.lon);
@@ -2717,6 +2732,7 @@ function tunnelWaypointLabel(name) {
             const idx = s1NearestIdx(s1Points, w.lat, w.lon);
             return { ...w, arrIdx: idx, km: s1CumDist[idx] / 1000, ele: s1Points[idx].ele };
           });
+        s1AddStartFinishWaypoints();
         s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
         s1WptUndoStack = []; s1WptRedoStack = []; updateS1WptUndoRedoUI();
         s1EditingWptIdx = null;
@@ -2893,6 +2909,7 @@ function tunnelWaypointLabel(name) {
   // provider 상태는 ②탭과 전역(wptMapProvider) 공유 — 한 번 고르면 두 탭에 동일 적용
   let s1WptMap = null, s1WptMapTrackLayer = null, s1WptMapMarkers = [], s1WptMapOverlay = null, s1WptMapFitTarget = null;
   let s1WptMapL = null, s1WptMapLTrackLayer = null, s1WptMapLMarkerGroup = null, s1WptMapLMarkers = [], s1WptMapLFitTarget = null;
+  let s1WptMapPendingBounds = null; // provider 전환 직전 화면 범위 — 전환 후에도 같은 화면을 유지하기 위함(트랙 전체 fit 방지)
 
   function s1WptMapMarkerImage(type) {
     return new kakao.maps.MarkerImage(wptMapMarkerSrc(type), new kakao.maps.Size(30, 30), { offset: new kakao.maps.Point(15, 15) });
@@ -3017,11 +3034,16 @@ function tunnelWaypointLabel(name) {
     return box;
   }
 
-  function s1HandleWptMapCreate(lat, lng) {
+  const WPT_CREATE_CLICK_PX = 25; // 이 픽셀 거리보다 멀리서 클릭하면 "코스 근처 클릭"으로 안 침 (임의의 빈 곳 클릭에 반응하던 문제 수정)
+  function s1HandleWptMapCreate(lat, lng, clickPx) {
     if (!s1Points.length) return;
     if (s1WptMapPendingMarker) { s1WptMapClearPending(); return; } // 이미 뜬 임시 마커가 있으면 지도 아무 곳이나 클릭 시 그냥 취소만
-    const idx = s1NearestIdx(s1Points, lat, lng);
+    // 방금 호버 중이던 지점(우클릭으로 겹친 구간 순환했을 수 있음)과 클릭 위치가 같은 자리면 그 지점을 그대로 사용
+    const useHover = clickPx && s1WptMapHoverIdx !== null &&
+      Math.hypot(s1WptMapHoverX - clickPx.x, s1WptMapHoverY - clickPx.y) <= WPT_CREATE_CLICK_PX;
+    const idx = useHover ? s1WptMapHoverIdx : s1NearestIdx(s1Points, lat, lng);
     const p = s1Points[idx];
+    if (clickPx && !s1IsClickNearTrack(p, clickPx)) return; // 코스 선에서 너무 먼 곳 클릭이면 무시
     if (hasCoordCollision(p.lat, p.lon)) return; // 이미 그 자리에 웨이포인트가 있음
 
     if (wptMapProvider === 'osm') {
@@ -3046,8 +3068,26 @@ function tunnelWaypointLabel(name) {
       s1WptMapShowOverlay(marker, s1WptMapCreatePopupEl(idx, p));
     }
   }
+
+  // 클릭 지점(화면 픽셀)이 실제로 트랙 위 점(p) 근처인지 — 지도 종류별로 픽셀 좌표 변환 방식이 달라서 분기
+  function s1IsClickNearTrack(p, clickPx) {
+    let trackPx = null;
+    if (wptMapProvider === 'osm') {
+      if (!s1WptMapL) return true; // 지도가 아직 없으면 판단 불가 — 막지 않음
+      trackPx = s1WptMapL.latLngToContainerPoint([p.lat, p.lon]);
+    } else {
+      if (!s1WptMap) return true;
+      trackPx = s1WptMap.getProjection().containerPointFromCoords(new kakao.maps.LatLng(p.lat, p.lon));
+    }
+    if (!trackPx) return true;
+    const dx = trackPx.x - clickPx.x, dy = trackPx.y - clickPx.y;
+    return Math.sqrt(dx * dx + dy * dy) <= WPT_CREATE_CLICK_PX;
+  }
   // ── 트랙 위에 마우스 올리면 거리·해발고도 툴팁 ──
   let s1WptMapTooltipEl = null;
+  // 왕복 코스처럼 한 화면 자리에 트랙이 여러 번 겹칠 때, 호버 중 우클릭으로 겹친 지점들 사이를 순환하기 위한 상태
+  let s1WptMapHoverIdx = null, s1WptMapHoverX = 0, s1WptMapHoverY = 0;
+  let s1WptMapHoverCandidates = null, s1WptMapHoverCandSel = 0;
   function s1WptMapEnsureTooltip() {
     if (s1WptMapTooltipEl) return s1WptMapTooltipEl;
     s1WptMapTooltipEl = document.createElement('div');
@@ -3064,8 +3104,43 @@ function tunnelWaypointLabel(name) {
     el.style.top = y + 'px';
     el.style.display = 'block';
   }
+  // mousemove로 새로 호버할 때 호출 — 순환 상태를 리셋하고 화면에 표시
+  function s1WptMapUpdateHover(x, y, idx) {
+    s1WptMapHoverIdx = idx;
+    s1WptMapHoverX = x;
+    s1WptMapHoverY = y;
+    s1WptMapHoverCandidates = null;
+    s1WptMapHoverCandSel = 0;
+    s1WptMapShowTooltip(x, y, idx);
+  }
   function s1WptMapHideTooltip() {
     if (s1WptMapTooltipEl) s1WptMapTooltipEl.style.display = 'none';
+    s1WptMapHoverIdx = null;
+    s1WptMapHoverCandidates = null;
+  }
+  // 같은 화면 자리(=거의 같은 좌표)에 겹쳐있는 다른 트랙 구간의 인덱스들을 찾음 (왕복 코스 등)
+  // 자기 자신 포함, 누적거리가 최소 MIN_KM_SEPARATION 이상 떨어진 지점만 "다른 패스"로 인정
+  function s1FindOverlapCandidates(centerIdx) {
+    const p0 = s1Points[centerIdx];
+    const GEO_THRESHOLD_M = 15, MIN_KM_SEPARATION = 0.05;
+    const centerKm = s1CumDist[centerIdx] / 1000;
+    const matches = [];
+    for (let i = 0; i < s1Points.length; i++) {
+      if (Math.abs(s1CumDist[i] / 1000 - centerKm) < MIN_KM_SEPARATION) continue;
+      if (haversineM(p0.lat, p0.lon, s1Points[i].lat, s1Points[i].lon) <= GEO_THRESHOLD_M) matches.push(i);
+    }
+    if (!matches.length) return [centerIdx];
+    matches.sort((a, b) => a - b);
+    const clusters = [];
+    for (const i of matches) {
+      const last = clusters[clusters.length - 1];
+      if (last && i - last[last.length - 1] <= 5) last.push(i); else clusters.push([i]);
+    }
+    const reps = clusters.map(c => c.reduce((best, i) => {
+      const d = haversineM(p0.lat, p0.lon, s1Points[i].lat, s1Points[i].lon);
+      return (!best || d < best.d) ? { i, d } : best;
+    }, null).i);
+    return [centerIdx, ...reps];
   }
   // 카카오맵 Polyline은 mousemove를 안정적으로 안 쏴서(카카오 데브톡 보고 사례들), #s1WptMap 컨테이너 자체에
   // 네이티브 DOM mousemove를 한 번만 붙여두고 직접 좌표변환+최근접점 계산으로 호버 판정을 함
@@ -3074,19 +3149,29 @@ function tunnelWaypointLabel(name) {
     const rect = evt.currentTarget.getBoundingClientRect();
     const x = evt.clientX - rect.left;
     const y = evt.clientY - rect.top;
-    const latlng = s1WptMap.getProjection().coordFromContainerPoint(new kakao.maps.Point(x, y));
+    const latlng = s1WptMap.getProjection().coordsFromContainerPoint(new kakao.maps.Point(x, y));
     const idx = s1NearestIdx(s1Points, latlng.getLat(), latlng.getLng());
     const p = s1Points[idx];
     if (!p) { s1WptMapHideTooltip(); return; }
     const pt = s1WptMap.getProjection().containerPointFromCoords(new kakao.maps.LatLng(p.lat, p.lon));
     if (Math.hypot(pt.x - x, pt.y - y) <= 14) {
-      s1WptMapShowTooltip(x, y, idx);
+      s1WptMapUpdateHover(x, y, idx);
     } else {
       s1WptMapHideTooltip();
     }
   }
   document.getElementById('s1WptMap').addEventListener('mousemove', s1WptMapNativeMouseMove);
   document.getElementById('s1WptMap').addEventListener('mouseleave', () => { if (wptMapProvider === 'kakao') s1WptMapHideTooltip(); });
+  // 호버 중 우클릭 — 같은 자리에 겹친 다른 구간(왕복 코스 등)으로 순환 전환. 겹친 게 없으면 아무 동작 안 함(기본 메뉴만 막음)
+  document.getElementById('s1WptMap').addEventListener('contextmenu', evt => {
+    if (s1WptMapHoverIdx === null) return;
+    evt.preventDefault();
+    if (!s1WptMapHoverCandidates) s1WptMapHoverCandidates = s1FindOverlapCandidates(s1WptMapHoverIdx);
+    if (s1WptMapHoverCandidates.length <= 1) return;
+    s1WptMapHoverCandSel = (s1WptMapHoverCandSel + 1) % s1WptMapHoverCandidates.length;
+    s1WptMapHoverIdx = s1WptMapHoverCandidates[s1WptMapHoverCandSel];
+    s1WptMapShowTooltip(s1WptMapHoverX, s1WptMapHoverY, s1WptMapHoverIdx);
+  });
 
   // ── 카카오맵 ──
   function s1EnsureWptMap() {
@@ -3096,7 +3181,7 @@ function tunnelWaypointLabel(name) {
       center: new kakao.maps.LatLng(37.5665, 126.9780),
       level: 7
     });
-    kakao.maps.event.addListener(s1WptMap, 'click', e => s1HandleWptMapCreate(e.latLng.getLat(), e.latLng.getLng()));
+    kakao.maps.event.addListener(s1WptMap, 'click', e => s1HandleWptMapCreate(e.latLng.getLat(), e.latLng.getLng(), e.point));
   }
 
   function s1CloseWptMapOverlay() {
@@ -3149,9 +3234,15 @@ function tunnelWaypointLabel(name) {
     // 호버 툴팁은 이 Polyline의 mousemove가 아니라, #s1WptMap에 한 번만 붙여둔 네이티브 DOM 리스너(s1WptMapNativeMouseMove)가 처리함
 
     if (isNewTrack) {
-      const bounds = new kakao.maps.LatLngBounds();
-      path.forEach(p => bounds.extend(p));
-      s1WptMap.setBounds(bounds);
+      if (s1WptMapPendingBounds) {
+        const pb = s1WptMapPendingBounds;
+        s1WptMap.setBounds(new kakao.maps.LatLngBounds(new kakao.maps.LatLng(pb.sw.lat, pb.sw.lng), new kakao.maps.LatLng(pb.ne.lat, pb.ne.lng)));
+        s1WptMapPendingBounds = null;
+      } else {
+        const bounds = new kakao.maps.LatLngBounds();
+        path.forEach(p => bounds.extend(p));
+        s1WptMap.setBounds(bounds);
+      }
       s1WptMapFitTarget = s1Points;
     }
 
@@ -3197,7 +3288,7 @@ function tunnelWaypointLabel(name) {
       attribution: '&copy; OpenStreetMap'
     }).addTo(s1WptMapL);
     s1WptMapLMarkerGroup = L.layerGroup().addTo(s1WptMapL);
-    s1WptMapL.on('click', e => s1HandleWptMapCreate(e.latlng.lat, e.latlng.lng));
+    s1WptMapL.on('click', e => s1HandleWptMapCreate(e.latlng.lat, e.latlng.lng, e.containerPoint));
   }
 
   function s1RenderWptMapOsm() {
@@ -3225,11 +3316,17 @@ function tunnelWaypointLabel(name) {
     s1WptMapLTrackLayer.on('mousemove', e => {
       const idx = s1NearestIdx(s1Points, e.latlng.lat, e.latlng.lng);
       const pt = s1WptMapL.latLngToContainerPoint(e.latlng);
-      s1WptMapShowTooltip(pt.x, pt.y, idx);
+      s1WptMapUpdateHover(pt.x, pt.y, idx);
     });
     s1WptMapLTrackLayer.on('mouseout', s1WptMapHideTooltip);
     if (isNewTrack) {
-      s1WptMapL.fitBounds(s1WptMapLTrackLayer.getBounds(), { padding: [20, 20] });
+      if (s1WptMapPendingBounds) {
+        const pb = s1WptMapPendingBounds;
+        s1WptMapL.fitBounds(L.latLngBounds([pb.sw.lat, pb.sw.lng], [pb.ne.lat, pb.ne.lng]));
+        s1WptMapPendingBounds = null;
+      } else {
+        s1WptMapL.fitBounds(s1WptMapLTrackLayer.getBounds(), { padding: [20, 20] });
+      }
       s1WptMapLFitTarget = s1Points;
     }
 
@@ -3288,6 +3385,7 @@ function tunnelWaypointLabel(name) {
     btn.addEventListener('click', () => {
       const p = btn.dataset.provider;
       if (p === wptMapProvider) return;
+      s1WptMapPendingBounds = s1WptMapCaptureBounds();
       wptMapProvider = p;
       try { localStorage.setItem('wptMapProvider', p); } catch (e) {}
       s1WptMapTeardown();
@@ -3295,6 +3393,21 @@ function tunnelWaypointLabel(name) {
       s1RenderWptMap();
     });
   });
+
+  // 전환 직전 provider의 현재 화면 범위를 lat/lng 기준으로 뽑아둠(두 provider 다 이해하는 공통 형식)
+  function s1WptMapCaptureBounds() {
+    try {
+      if (wptMapProvider === 'osm') {
+        if (!s1WptMapL) return null;
+        const b = s1WptMapL.getBounds();
+        return { sw: { lat: b.getSouthWest().lat, lng: b.getSouthWest().lng }, ne: { lat: b.getNorthEast().lat, lng: b.getNorthEast().lng } };
+      } else {
+        if (!s1WptMap) return null;
+        const b = s1WptMap.getBounds();
+        return { sw: { lat: b.getSouthWest().getLat(), lng: b.getSouthWest().getLng() }, ne: { lat: b.getNorthEast().getLat(), lng: b.getNorthEast().getLng() } };
+      }
+    } catch (e) { return null; }
+  }
 
   function s1RenderWptMap() {
     if (!s1EasterEgg) { s1WptMapWrap.style.display = 'none'; return; } // 매개변수 "오동도짱" 입력 시에만 노출
@@ -3647,6 +3760,9 @@ function process(text, fname, format) {
     points = []; waypoints = [];
     return;
   }
+
+  addStartFinishWaypointsT2();
+  waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
 
   // ── 결과 렌더 ──
   const s = calcStats(0);
@@ -4059,6 +4175,21 @@ document.getElementById('climbModalOverlay').addEventListener('click', e => {
 function hasCoordCollisionT2(lat, lon) {
   return waypoints.some(w => Math.abs(parseFloat(w.latStr) - lat) < 1e-6 && Math.abs(parseFloat(w.lonStr) - lon) < 1e-6);
 }
+
+// 파일 불러올 때 트랙 시작/끝에 Start/Finish 웨이포인트 자동 생성 (이미 그 근처에 웨이포인트가 있으면 중복 생성 안 함)
+function addStartFinishWaypointsT2() {
+  if (points.length < 2) return;
+  const lastIdx = points.length - 1;
+  const first = points[0], last = points[lastIdx];
+  const totalKm = cumDist[lastIdx] / 1000;
+  const NEAR_KM = 0.2; // 이 거리 안에 이미 웨이포인트가 있으면 "시작/끝 표시가 이미 있다"고 봄 (좌표 완전일치가 아니어도 됨)
+  if (!waypoints.some(w => w.km <= NEAR_KM)) {
+    waypoints.push({ latStr: first.latStr, lonStr: first.lonStr, typeAttr: 'Generic', nameRaw: 'Start', noteRaw: '', eleStr: first.eleStr, hadEle: true, arrIdx: 0, km: 0, ele: first.ele });
+  }
+  if (!waypoints.some(w => totalKm - w.km <= NEAR_KM)) {
+    waypoints.push({ latStr: last.latStr, lonStr: last.lonStr, typeAttr: 'Generic', nameRaw: 'Finish', noteRaw: '', eleStr: last.eleStr, hadEle: true, arrIdx: lastIdx, km: totalKm, ele: last.ele });
+  }
+}
 async function resolveClimbWaypointT2(peakIdx) {
   const p = points[peakIdx];
   const info = await fetchPlaceInfo(p.lat, p.lon);
@@ -4334,6 +4465,7 @@ let wptMapProvider = (function () { try { return localStorage.getItem('wptMapPro
 
 // 카카오맵 상태
 let wptMap = null, wptMapTrackLayer = null, wptMapMarkers = [], wptMapOverlay = null, wptMapFitTarget = null;
+let wptMapPendingBounds = null; // provider 전환 직전 화면 범위 — 전환 후에도 같은 화면을 유지하기 위함(트랙 전체 fit 방지)
 // OSM(Leaflet) 상태
 let wptMapL = null, wptMapLTrackLayer = null, wptMapLMarkerGroup = null, wptMapLMarkers = [], wptMapLFitTarget = null;
 // 트랙 진행 방향 화살표 토글 (겹치는 왕복 구간에서 어느 방향인지 구분용) — 양쪽 탭이 이 상태를 공유함
@@ -4502,11 +4634,16 @@ function wptMapCreatePopupEl(idx, p) {
   return box;
 }
 
-function handleWptMapCreate(lat, lng) {
+const WPT_CREATE_CLICK_PX = 25; // 이 픽셀 거리보다 멀리서 클릭하면 "코스 근처 클릭"으로 안 침 (임의의 빈 곳 클릭에 반응하던 문제 수정)
+function handleWptMapCreate(lat, lng, clickPx) {
   if (!points.length) return;
   if (wptMapPendingMarker) { wptMapClearPending(); return; } // 이미 뜬 임시 마커가 있으면 지도 아무 곳이나 클릭 시 그냥 취소만
-  const idx = nearestIdx(lat, lng);
+  // 방금 호버 중이던 지점(우클릭으로 겹친 구간 순환했을 수 있음)과 클릭 위치가 같은 자리면 그 지점을 그대로 사용
+  const useHover = clickPx && wptMapHoverIdx !== null &&
+    Math.hypot(wptMapHoverX - clickPx.x, wptMapHoverY - clickPx.y) <= WPT_CREATE_CLICK_PX;
+  const idx = useHover ? wptMapHoverIdx : nearestIdx(lat, lng);
   const p = points[idx];
+  if (clickPx && !isClickNearTrack(p, clickPx)) return; // 코스 선에서 너무 먼 곳 클릭이면 무시
   if (hasCoordCollisionT2(p.lat, p.lon)) return; // 이미 그 자리에 웨이포인트가 있음
 
   if (wptMapProvider === 'osm') {
@@ -4533,8 +4670,26 @@ function handleWptMapCreate(lat, lng) {
     wptMapShowOverlay(marker, wptMapCreatePopupEl(idx, p));
   }
 }
+
+// 클릭 지점(화면 픽셀)이 실제로 트랙 위 점(p) 근처인지 — 지도 종류별로 픽셀 좌표 변환 방식이 달라서 분기
+function isClickNearTrack(p, clickPx) {
+  let trackPx = null;
+  if (wptMapProvider === 'osm') {
+    if (!wptMapL) return true; // 지도가 아직 없으면 판단 불가 — 막지 않음
+    trackPx = wptMapL.latLngToContainerPoint([p.lat, p.lon]);
+  } else {
+    if (!wptMap) return true;
+    trackPx = wptMap.getProjection().containerPointFromCoords(new kakao.maps.LatLng(p.lat, p.lon));
+  }
+  if (!trackPx) return true;
+  const dx = trackPx.x - clickPx.x, dy = trackPx.y - clickPx.y;
+  return Math.sqrt(dx * dx + dy * dy) <= WPT_CREATE_CLICK_PX;
+}
 // ── 트랙 위에 마우스 올리면 거리·해발고도 툴팁 ──
 let wptMapTooltipEl = null;
+// 왕복 코스처럼 한 화면 자리에 트랙이 여러 번 겹칠 때, 호버 중 우클릭으로 겹친 지점들 사이를 순환하기 위한 상태
+let wptMapHoverIdx = null, wptMapHoverX = 0, wptMapHoverY = 0;
+let wptMapHoverCandidates = null, wptMapHoverCandSel = 0;
 function wptMapEnsureTooltip() {
   if (wptMapTooltipEl) return wptMapTooltipEl;
   wptMapTooltipEl = document.createElement('div');
@@ -4551,8 +4706,43 @@ function wptMapShowTooltip(x, y, idx) {
   el.style.top = y + 'px';
   el.style.display = 'block';
 }
+// mousemove로 새로 호버할 때 호출 — 순환 상태를 리셋하고 화면에 표시
+function wptMapUpdateHover(x, y, idx) {
+  wptMapHoverIdx = idx;
+  wptMapHoverX = x;
+  wptMapHoverY = y;
+  wptMapHoverCandidates = null;
+  wptMapHoverCandSel = 0;
+  wptMapShowTooltip(x, y, idx);
+}
 function wptMapHideTooltip() {
   if (wptMapTooltipEl) wptMapTooltipEl.style.display = 'none';
+  wptMapHoverIdx = null;
+  wptMapHoverCandidates = null;
+}
+// 같은 화면 자리(=거의 같은 좌표)에 겹쳐있는 다른 트랙 구간의 인덱스들을 찾음 (왕복 코스 등)
+// 자기 자신 포함, 누적거리가 최소 MIN_KM_SEPARATION 이상 떨어진 지점만 "다른 패스"로 인정
+function findOverlapCandidates(centerIdx) {
+  const p0 = points[centerIdx];
+  const GEO_THRESHOLD_M = 15, MIN_KM_SEPARATION = 0.05;
+  const centerKm = cumDist[centerIdx] / 1000;
+  const matches = [];
+  for (let i = 0; i < points.length; i++) {
+    if (Math.abs(cumDist[i] / 1000 - centerKm) < MIN_KM_SEPARATION) continue;
+    if (haversineM(p0.lat, p0.lon, points[i].lat, points[i].lon) <= GEO_THRESHOLD_M) matches.push(i);
+  }
+  if (!matches.length) return [centerIdx];
+  matches.sort((a, b) => a - b);
+  const clusters = [];
+  for (const i of matches) {
+    const last = clusters[clusters.length - 1];
+    if (last && i - last[last.length - 1] <= 5) last.push(i); else clusters.push([i]);
+  }
+  const reps = clusters.map(c => c.reduce((best, i) => {
+    const d = haversineM(p0.lat, p0.lon, points[i].lat, points[i].lon);
+    return (!best || d < best.d) ? { i, d } : best;
+  }, null).i);
+  return [centerIdx, ...reps];
 }
 // 카카오맵 Polyline은 mousemove를 안정적으로 안 쏴서(카카오 데브톡 보고 사례들), #wptMap 컨테이너 자체에
 // 네이티브 DOM mousemove를 한 번만 붙여두고 직접 좌표변환+최근접점 계산으로 호버 판정을 함
@@ -4561,19 +4751,29 @@ function wptMapNativeMouseMove(evt) {
   const rect = evt.currentTarget.getBoundingClientRect();
   const x = evt.clientX - rect.left;
   const y = evt.clientY - rect.top;
-  const latlng = wptMap.getProjection().coordFromContainerPoint(new kakao.maps.Point(x, y));
+  const latlng = wptMap.getProjection().coordsFromContainerPoint(new kakao.maps.Point(x, y));
   const idx = nearestIdx(latlng.getLat(), latlng.getLng());
   const p = points[idx];
   if (!p) { wptMapHideTooltip(); return; }
   const pt = wptMap.getProjection().containerPointFromCoords(new kakao.maps.LatLng(p.lat, p.lon));
   if (Math.hypot(pt.x - x, pt.y - y) <= 14) {
-    wptMapShowTooltip(x, y, idx);
+    wptMapUpdateHover(x, y, idx);
   } else {
     wptMapHideTooltip();
   }
 }
 document.getElementById('wptMap').addEventListener('mousemove', wptMapNativeMouseMove);
 document.getElementById('wptMap').addEventListener('mouseleave', () => { if (wptMapProvider === 'kakao') wptMapHideTooltip(); });
+// 호버 중 우클릭 — 같은 자리에 겹친 다른 구간(왕복 코스 등)으로 순환 전환. 겹친 게 없으면 아무 동작 안 함(기본 메뉴만 막음)
+document.getElementById('wptMap').addEventListener('contextmenu', evt => {
+  if (wptMapHoverIdx === null) return;
+  evt.preventDefault();
+  if (!wptMapHoverCandidates) wptMapHoverCandidates = findOverlapCandidates(wptMapHoverIdx);
+  if (wptMapHoverCandidates.length <= 1) return;
+  wptMapHoverCandSel = (wptMapHoverCandSel + 1) % wptMapHoverCandidates.length;
+  wptMapHoverIdx = wptMapHoverCandidates[wptMapHoverCandSel];
+  wptMapShowTooltip(wptMapHoverX, wptMapHoverY, wptMapHoverIdx);
+});
 
 // ── 카카오맵 ──
 function ensureWptMap() {
@@ -4583,7 +4783,7 @@ function ensureWptMap() {
     center: new kakao.maps.LatLng(37.5665, 126.9780),
     level: 7
   });
-  kakao.maps.event.addListener(wptMap, 'click', e => handleWptMapCreate(e.latLng.getLat(), e.latLng.getLng()));
+  kakao.maps.event.addListener(wptMap, 'click', e => handleWptMapCreate(e.latLng.getLat(), e.latLng.getLng(), e.point));
 }
 
 function closeWptMapOverlay() {
@@ -4637,9 +4837,15 @@ function renderWptMapKakao() {
   // — 카카오맵 Polyline은 mousemove를 안정적으로 안 쏴서(카카오 데브톡 보고) 굵은 투명선을 겹쳐도 소용없었음
 
   if (isNewTrack) {
-    const bounds = new kakao.maps.LatLngBounds();
-    path.forEach(p => bounds.extend(p));
-    wptMap.setBounds(bounds);
+    if (wptMapPendingBounds) {
+      const pb = wptMapPendingBounds;
+      wptMap.setBounds(new kakao.maps.LatLngBounds(new kakao.maps.LatLng(pb.sw.lat, pb.sw.lng), new kakao.maps.LatLng(pb.ne.lat, pb.ne.lng)));
+      wptMapPendingBounds = null;
+    } else {
+      const bounds = new kakao.maps.LatLngBounds();
+      path.forEach(p => bounds.extend(p));
+      wptMap.setBounds(bounds);
+    }
     wptMapFitTarget = points;
   }
 
@@ -4685,7 +4891,7 @@ function ensureWptMapL() {
     attribution: '&copy; OpenStreetMap'
   }).addTo(wptMapL);
   wptMapLMarkerGroup = L.layerGroup().addTo(wptMapL);
-  wptMapL.on('click', e => handleWptMapCreate(e.latlng.lat, e.latlng.lng));
+  wptMapL.on('click', e => handleWptMapCreate(e.latlng.lat, e.latlng.lng, e.containerPoint));
 }
 
 function renderWptMapOsm() {
@@ -4713,11 +4919,17 @@ function renderWptMapOsm() {
   wptMapLTrackLayer.on('mousemove', e => {
     const idx = nearestIdx(e.latlng.lat, e.latlng.lng);
     const pt = wptMapL.latLngToContainerPoint(e.latlng);
-    wptMapShowTooltip(pt.x, pt.y, idx);
+    wptMapUpdateHover(pt.x, pt.y, idx);
   });
   wptMapLTrackLayer.on('mouseout', wptMapHideTooltip);
   if (isNewTrack) {
-    wptMapL.fitBounds(wptMapLTrackLayer.getBounds(), { padding: [20, 20] });
+    if (wptMapPendingBounds) {
+      const pb = wptMapPendingBounds;
+      wptMapL.fitBounds(L.latLngBounds([pb.sw.lat, pb.sw.lng], [pb.ne.lat, pb.ne.lng]));
+      wptMapPendingBounds = null;
+    } else {
+      wptMapL.fitBounds(wptMapLTrackLayer.getBounds(), { padding: [20, 20] });
+    }
     wptMapLFitTarget = points;
   }
 
@@ -4777,12 +4989,28 @@ document.querySelectorAll('#wptMapWrap .wpt-map-provider-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const p = btn.dataset.provider;
     if (p === wptMapProvider) return;
+    wptMapPendingBounds = wptMapCaptureBounds();
     wptMapProvider = p;
     try { localStorage.setItem('wptMapProvider', p); } catch (e) {}
     wptMapTeardown();
     renderWptMap();
   });
 });
+
+// 전환 직전 provider의 현재 화면 범위를 lat/lng 기준으로 뽑아둠(두 provider 다 이해하는 공통 형식)
+function wptMapCaptureBounds() {
+  try {
+    if (wptMapProvider === 'osm') {
+      if (!wptMapL) return null;
+      const b = wptMapL.getBounds();
+      return { sw: { lat: b.getSouthWest().lat, lng: b.getSouthWest().lng }, ne: { lat: b.getNorthEast().lat, lng: b.getNorthEast().lng } };
+    } else {
+      if (!wptMap) return null;
+      const b = wptMap.getBounds();
+      return { sw: { lat: b.getSouthWest().getLat(), lng: b.getSouthWest().getLng() }, ne: { lat: b.getNorthEast().getLat(), lng: b.getNorthEast().getLng() } };
+    }
+  } catch (e) { return null; }
+}
 
 function renderWptMap() {
   if (!easterEggMode) { wptMapWrap.style.display = 'none'; return; } // 매개변수 "오동도짱" 입력 시에만 노출
