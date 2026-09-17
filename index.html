@@ -2771,8 +2771,9 @@ function tunnelWaypointLabel(name) {
         sCourseName.value = file.name.replace(/\.(gpx|tcx)$/i, '') + '_corrected';
         s1Param.value = '';
         sResult.style.display = 'none';
-        sOptionsBar.style.display = 'none';
-        sDownloadBar.style.display = 'none';
+        // 보정 안 해도 매개변수(오동도짱)나 GPX/TCX 내보내기(웨이포인트만 편집해서 받기 등)를 바로 쓸 수 있게, 파일 불러오면 바로 표시
+        sOptionsBar.style.display = 'flex';
+        sDownloadBar.style.display = 'flex';
         s1Thresh.value = 0; s1ThreshVal.textContent = '0 m';
         s1RenderStats(0);
         s1RenderWaypoints();
@@ -2797,8 +2798,7 @@ function tunnelWaypointLabel(name) {
     if (!s1Points.length) return;
     hideSError();
     sResult.style.display = 'none';
-    sOptionsBar.style.display = 'none';
-    sDownloadBar.style.display = 'none';
+    // 매개변수/내보내기 바는 보정 중에도 계속 보이게 유지 (더 이상 여기서 숨기지 않음)
     sRunBtn.style.display = 'none';
     sProgress.style.display = 'flex';
     sProgressText.textContent = t('s1ProgressText');
