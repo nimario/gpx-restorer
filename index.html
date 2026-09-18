@@ -1247,6 +1247,7 @@
     <button type="button" class="wpt-head-btn" id="s1WptRedoBtn" data-i18n="wptRedoBtn" title="Ctrl+Y">↪ 다시실행</button>
     <button type="button" class="wpt-head-btn" id="s1BtnCsv" data-i18n="exportCsvShort">CSV</button>
     <button type="button" class="wpt-head-btn accent" id="s1ClimbBtn" data-i18n="climbDetectBtn">⛰️ 오르막 자동 감지</button>
+    <button type="button" class="wpt-head-btn" id="s1StartFinishBtn" data-i18n="startFinishBtn">🚩 Start/Finish 생성</button>
   </div>
   <div id="s1WptSaveBar" class="wpt-save-bar">
     <span id="s1WptSaveCount"></span>
@@ -1422,6 +1423,7 @@
   <button type="button" class="wpt-head-btn" id="wptRedoBtn" data-i18n="wptRedoBtn" title="Ctrl+Y">↪ 다시실행</button>
   <button type="button" class="wpt-head-btn" id="btnCsv" data-i18n="exportCsvShort">CSV</button>
   <button type="button" class="wpt-head-btn accent" id="climbBtn" data-i18n="climbDetectBtn">⛰️ 오르막 자동 감지</button>
+  <button type="button" class="wpt-head-btn" id="startFinishBtn" data-i18n="startFinishBtn">🚩 Start/Finish 생성</button>
 </div>
 <div id="wptSaveBar" class="wpt-save-bar">
   <span id="wptSaveCount"></span>
@@ -1565,6 +1567,7 @@ const I18N = {
     wptUndoBtn:'↩ 실행취소',
     wptRedoBtn:'↪ 다시실행',
     climbDetectBtn:'⛰️ 오르막 자동 감지',
+    startFinishBtn:'🚩 Start/Finish 생성',
     climbModalTitle:'감지된 오르막',
     climbSummary:'오르막 합계 <b>{km}km</b> · 획득고도 <b>{gain}m</b>',
     climbModalClose:'닫기',
@@ -1667,6 +1670,7 @@ const I18N = {
     wptUndoBtn:'↩ Undo',
     wptRedoBtn:'↪ Redo',
     climbDetectBtn:'⛰️ Auto-detect Climbs',
+    startFinishBtn:'🚩 Generate Start/Finish',
     climbModalTitle:'Detected Climbs',
     climbSummary:'Total <b>{km}km</b> · Gain <b>{gain}m</b>',
     climbModalClose:'Close',
@@ -1768,6 +1772,7 @@ const I18N = {
     wptUndoBtn:'↩ 元に戻す',
     wptRedoBtn:'↪ やり直す',
     climbDetectBtn:'⛰️ 上り坂自動検出',
+    startFinishBtn:'🚩 スタート/フィニッシュ生成',
     climbModalTitle:'検出された上り坂',
     climbSummary:'合計 <b>{km}km</b> · 獲得標高 <b>{gain}m</b>',
     climbModalClose:'閉じる',
@@ -2577,7 +2582,8 @@ function tunnelWaypointLabel(name) {
     return s1Waypoints.some(w => Math.abs(w.lat - lat) < 1e-6 && Math.abs(w.lon - lon) < 1e-6);
   }
 
-  // 파일 불러올 때 트랙 시작/끝에 Start/Finish 웨이포인트 자동 생성 (이미 그 자리에 웨이포인트가 있으면 중복 생성 안 함)
+  // "Start/Finish 생성" 버튼 클릭 시 트랙 시작/끝에 웨이포인트 생성 (이미 그 자리에 웨이포인트가 있으면 중복 생성 안 함)
+  // — 예전엔 파일 불러오면 자동으로 생겼는데, 버튼 눌러야만 생기는 방식으로 변경함
   function s1AddStartFinishWaypoints() {
     if (s1Points.length < 2) return;
     const lastIdx = s1Points.length - 1;
@@ -2590,7 +2596,14 @@ function tunnelWaypointLabel(name) {
     if (!s1Waypoints.some(w => totalKm - w.km <= NEAR_KM)) {
       s1Waypoints.push({ lat: last.lat, lon: last.lon, name: 'Finish', type: 'Generic', arrIdx: lastIdx, km: totalKm, ele: last.ele });
     }
+    s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
   }
+  document.getElementById('s1StartFinishBtn').addEventListener('click', () => {
+    if (!s1Points.length) return;
+    s1WptPushUndo();
+    s1AddStartFinishWaypoints();
+    s1RenderWaypoints();
+  });
 
   async function s1ResolveClimbWaypoint(peakIdx) {
     const p = s1Points[peakIdx];
@@ -2759,7 +2772,6 @@ function tunnelWaypointLabel(name) {
             const idx = s1NearestIdx(s1Points, w.lat, w.lon);
             return { ...w, arrIdx: idx, km: s1CumDist[idx] / 1000, ele: s1Points[idx].ele };
           });
-        s1AddStartFinishWaypoints();
         s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
         s1WptUndoStack = []; s1WptRedoStack = []; updateS1WptUndoRedoUI();
         s1EditingWptIdx = null;
@@ -3788,9 +3800,6 @@ function process(text, fname, format) {
     return;
   }
 
-  addStartFinishWaypointsT2();
-  waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
-
   // ── 결과 렌더 ──
   const s = calcStats(0);
   const ridingazuaGain = calcRawGain();
@@ -4203,7 +4212,8 @@ function hasCoordCollisionT2(lat, lon) {
   return waypoints.some(w => Math.abs(parseFloat(w.latStr) - lat) < 1e-6 && Math.abs(parseFloat(w.lonStr) - lon) < 1e-6);
 }
 
-// 파일 불러올 때 트랙 시작/끝에 Start/Finish 웨이포인트 자동 생성 (이미 그 근처에 웨이포인트가 있으면 중복 생성 안 함)
+// "Start/Finish 생성" 버튼 클릭 시 트랙 시작/끝에 웨이포인트 생성 (이미 그 근처에 웨이포인트가 있으면 중복 생성 안 함)
+// — 예전엔 파일 불러오면 자동으로 생겼는데, 버튼 눌러야만 생기는 방식으로 변경함
 function addStartFinishWaypointsT2() {
   if (points.length < 2) return;
   const lastIdx = points.length - 1;
@@ -4216,7 +4226,14 @@ function addStartFinishWaypointsT2() {
   if (!waypoints.some(w => totalKm - w.km <= NEAR_KM)) {
     waypoints.push({ latStr: last.latStr, lonStr: last.lonStr, typeAttr: 'Generic', nameRaw: 'Finish', noteRaw: '', eleStr: last.eleStr, hadEle: true, arrIdx: lastIdx, km: totalKm, ele: last.ele });
   }
+  waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
 }
+document.getElementById('startFinishBtn').addEventListener('click', () => {
+  if (!points.length) return;
+  wptPushUndo();
+  addStartFinishWaypointsT2();
+  renderWaypoints();
+});
 async function resolveClimbWaypointT2(peakIdx) {
   const p = points[peakIdx];
   const info = await fetchPlaceInfo(p.lat, p.lon);
