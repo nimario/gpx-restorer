@@ -1133,7 +1133,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.29</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.30</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1482,7 +1482,7 @@
 
 </main>
 
-<footer id="footerText">v3.29 (2026.09.28) · Made by 오동도</footer>
+<footer id="footerText">v3.30 (2026.09.28) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1815,8 +1815,8 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.29';
-const APP_DATE = '2026.09.14';
+const APP_VERSION = 'v3.30';
+const APP_DATE = '2026.09.28';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
   document.getElementById('footerText').textContent =
@@ -2584,25 +2584,6 @@ function tunnelWaypointLabel(name) {
     return s1Waypoints.some(w => Math.abs(w.lat - lat) < 1e-6 && Math.abs(w.lon - lon) < 1e-6);
   }
 
-  // 오르막 정상 중복 판정 — 왕복/부분중복 코스에서 같은 고개를 양방향에서 지나가면
-  // 실제 도로 위 위치 자체가 살짝 달라서(20~50m대) 단순 좌표 반경만으로는 판정이 애매함.
-  // 그래서 지명 조회 결과(같은 지명이면 같은 고개로 봄)를 우선 신호로 쓰고,
-  // 지명을 못 찾아 고도값으로 이름이 붙은 경우("228m" 형태)만 좁은 반경으로 보완 판정한다.
-  const CLIMB_NAMED_MERGE_RADIUS_M = 1000;   // 같은 지명이어도 이 이상 떨어져 있으면(동명이지 등) 안 합침 — 넉넉한 안전판
-  const CLIMB_GENERIC_MERGE_RADIUS_M = 100;  // 지명 없이 고도값 이름일 때만 쓰는 좁은 반경
-  function s1IsGenericClimbName(name) {
-    return /^-?\d+(\.\d+)?\s*m$/.test((name || '').trim());
-  }
-  function s1FindDuplicateSummit(wpt) {
-    const isGeneric = s1IsGenericClimbName(wpt.name);
-    return s1Waypoints.find(w => {
-      if (w.type !== 'Summit') return false;
-      const d = haversineM(w.lat, w.lon, wpt.lat, wpt.lon);
-      if (isGeneric || s1IsGenericClimbName(w.name)) return d <= CLIMB_GENERIC_MERGE_RADIUS_M;
-      return w.name === wpt.name && d <= CLIMB_NAMED_MERGE_RADIUS_M;
-    });
-  }
-
   // "Start/Finish 생성" 버튼 클릭 시 트랙 시작/끝에 웨이포인트 생성 (이미 그 자리에 웨이포인트가 있으면 중복 생성 안 함)
   // — 예전엔 파일 불러오면 자동으로 생겼는데, 버튼 눌러야만 생기는 방식으로 변경함
   function s1AddStartFinishWaypoints() {
@@ -2650,7 +2631,7 @@ function tunnelWaypointLabel(name) {
     const p = s1Points[c.peakIdx];
     if (hasCoordCollision(p.lat, p.lon)) return 'collision';
     const wpt = await s1ResolveClimbWaypoint(c.peakIdx);
-    if (s1FindDuplicateSummit(wpt)) return 'collision'; // 같은 지명(또는 무명이면 근접)의 정상이 이미 있음
+    if (hasCoordCollision(wpt.lat, wpt.lon)) return 'collision'; // 터널입구로 옮긴 자리가 겹칠 수도 있어 재확인
     s1WptPushUndo();
     s1Waypoints.push(wpt);
     return 'created';
@@ -2688,17 +2669,15 @@ function tunnelWaypointLabel(name) {
     }
     // 2단계: 지명 조회는 전부 동시에 (병렬) - 순차 대기 방지
     if (jobs.length) s1WptPushUndo(); // 여러 개를 한 번에 추가해도 되돌리기는 한 번에
-    const resolved = await Promise.all(jobs.map(job => s1ResolveClimbWaypoint(job.c.peakIdx).then(wpt => ({ job, wpt }))));
-    // 3단계: 병합 판정은 순서대로 처리 — 같은 배치 안에서 같은 고개가 양쪽 다 있어도(왕복 등)
-    // 먼저 만든 쪽이 실제로 push된 뒤에 다음 걸 판정해야 서로 중복 생성을 못 막고 지나가는 레이스가 안 생김
-    for (const { job, wpt } of resolved) {
-      if (s1FindDuplicateSummit(wpt)) {
+    await Promise.all(jobs.map(async job => {
+      const wpt = await s1ResolveClimbWaypoint(job.c.peakIdx);
+      if (hasCoordCollision(wpt.lat, wpt.lon)) {
         job.b.textContent = t('climbSkipped');
-        continue;
+        return;
       }
       s1Waypoints.push(wpt);
       job.b.textContent = t('climbCreated');
-    }
+    }));
 
     s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
     s1RenderWaypoints();
@@ -4375,24 +4354,6 @@ function hasCoordCollisionT2(lat, lon) {
   return waypoints.some(w => Math.abs(parseFloat(w.latStr) - lat) < 1e-6 && Math.abs(parseFloat(w.lonStr) - lon) < 1e-6);
 }
 
-// 오르막 정상 중복 판정 (Tab1 s1FindDuplicateSummit와 동일 로직 — 지명이 같으면 같은 고개로 보고,
-// 지명 없이 고도값 이름("228m")일 때만 좁은 반경으로 보완 판정)
-const CLIMB_NAMED_MERGE_RADIUS_M_T2 = 1000;
-const CLIMB_GENERIC_MERGE_RADIUS_M_T2 = 100;
-function isGenericClimbNameT2(name) {
-  return /^-?\d+(\.\d+)?\s*m$/.test((name || '').trim());
-}
-function findDuplicateSummitT2(wpt) {
-  const wLat = parseFloat(wpt.latStr), wLon = parseFloat(wpt.lonStr);
-  const isGeneric = isGenericClimbNameT2(wpt.nameRaw);
-  return waypoints.find(w => {
-    if (w.typeAttr !== 'Summit') return false;
-    const d = haversineM(parseFloat(w.latStr), parseFloat(w.lonStr), wLat, wLon);
-    if (isGeneric || isGenericClimbNameT2(w.nameRaw)) return d <= CLIMB_GENERIC_MERGE_RADIUS_M_T2;
-    return w.nameRaw === wpt.nameRaw && d <= CLIMB_NAMED_MERGE_RADIUS_M_T2;
-  });
-}
-
 // "Start/Finish 생성" 버튼 클릭 시 트랙 시작/끝에 웨이포인트 생성 (이미 그 근처에 웨이포인트가 있으면 중복 생성 안 함)
 // — 예전엔 파일 불러오면 자동으로 생겼는데, 버튼 눌러야만 생기는 방식으로 변경함
 function addStartFinishWaypointsT2() {
@@ -4454,7 +4415,7 @@ document.getElementById('climbList').addEventListener('click', async e => {
     return;
   }
   const wpt = await resolveClimbWaypointT2(c.peakIdx);
-  if (findDuplicateSummitT2(wpt)) {
+  if (hasCoordCollisionT2(parseFloat(wpt.latStr), parseFloat(wpt.lonStr))) {
     btn.textContent = t('climbSkipped');
     return;
   }
@@ -4481,17 +4442,15 @@ document.getElementById('climbCreateAllBtn').addEventListener('click', async () 
       jobs.push({ b, c });
     }
   }
-  const resolved = await Promise.all(jobs.map(job => resolveClimbWaypointT2(job.c.peakIdx).then(wpt => ({ job, wpt }))));
-  // 같은 배치 안에서도 먼저 만든 쪽이 실제로 push된 뒤에 다음 걸 판정해야
-  // 서로 중복 생성을 못 막고 지나가는 레이스가 안 생김
-  for (const { job, wpt } of resolved) {
-    if (findDuplicateSummitT2(wpt)) {
+  await Promise.all(jobs.map(async job => {
+    const wpt = await resolveClimbWaypointT2(job.c.peakIdx);
+    if (hasCoordCollisionT2(parseFloat(wpt.latStr), parseFloat(wpt.lonStr))) {
       job.b.textContent = t('climbSkipped');
-      continue;
+      return;
     }
     waypoints.push(wpt);
     job.b.textContent = t('climbCreated');
-  }
+  }));
 
   waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
   renderWaypoints();
