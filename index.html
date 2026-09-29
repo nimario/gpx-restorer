@@ -1133,7 +1133,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.30</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.31</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1482,7 +1482,7 @@
 
 </main>
 
-<footer id="footerText">v3.30 (2026.09.28) · Made by 오동도</footer>
+<footer id="footerText">v3.31 (2026.09.29) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1815,8 +1815,8 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.30';
-const APP_DATE = '2026.09.28';
+const APP_VERSION = 'v3.31';
+const APP_DATE = '2026.09.29';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
   document.getElementById('footerText').textContent =
@@ -2378,6 +2378,16 @@ function tunnelWaypointLabel(name) {
     }
   });
 
+  // 이름 수정 중 Enter 치면 저장(✓) 버튼 누른 것과 동일하게 처리 — 매번 마우스로 클릭 안 해도 되게
+  s1WptList.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (!e.target.closest('.wpt-edit-name')) return;
+    e.preventDefault();
+    const row = e.target.closest('.wpt-row');
+    const saveBtn = row && row.querySelector('.wpt-save-btn');
+    if (saveBtn) saveBtn.click();
+  });
+
   // 이름 클릭 시 지도에서 해당 웨이포인트 위치로 이동 + 지도가 보이도록 자동 스크롤
   function s1WptFocusMapOnIdx(idx) {
     if (!s1EasterEgg) return;
@@ -2552,9 +2562,72 @@ function tunnelWaypointLabel(name) {
     return { label: '-', color: '#5a7a9a' };
   }
 
+  // 왕복/부분중복 구간에서 한쪽 방향만 오르막으로 잡히는 문제 보완 — 스트라바 보정 결과가
+  // 돌릴 때마다 미세하게 달라져서, 3% 경계선에 걸친 오르막은 한쪽만 우연히 기준을 못 넘을 수 있음
+  // (실측으로 같은 파일을 반복 보정해서 확인함). 겹침 구간 분석으로 "같은 물리적 지점"이라는 게
+  // 이미 확인된 반대편에 오르막이 하나도 없으면, 확인된 쪽의 존재를 근거로 반대편도 후보에 추가한다.
+  function s1FindNearestIdxInRange(refIdx, rangeStart, rangeEnd) {
+    const ref = s1Points[refIdx];
+    const lo = Math.max(0, rangeStart), hi = Math.min(s1Points.length - 1, rangeEnd);
+    let best = null, bestD = Infinity;
+    for (let i = lo; i <= hi; i++) {
+      const d = haversineM(ref.lat, ref.lon, s1Points[i].lat, s1Points[i].lon);
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    return bestD <= 50 ? best : null; // 겹침 클러스터 탐지 기준(50m)과 동일하게 맞춤 — 느슨하면 엉뚱한 지점까지 짝지어짐
+  }
+  function s1BuildMirrorClimb(peakIdx, confirmedClimb) {
+    const cum = s1CumDist, pts = s1Points;
+    // 확인된 쪽 오르막과 같은 길이만큼 뒤로 가서 그 구간의 실제 고도차로 계산 — 반대편에서
+    // 독립적으로 최저점을 다시 찾지 않음(노이즈 있는 구간에서 엉뚱하게 먼 지점까지 헤매는 것 방지),
+    // 확인된 쪽 구조(길이)를 그대로 반영해서 "같은 오르막"이라는 전제에 충실하게 계산
+    const targetLengthM = confirmedClimb.lengthM;
+    let startIdx = peakIdx;
+    while (startIdx > 0 && cum[peakIdx] - cum[startIdx] < targetLengthM) startIdx--;
+    const lengthM = cum[peakIdx] - cum[startIdx];
+    const elevGain = pts[peakIdx].ele - pts[startIdx].ele;
+    if (lengthM < 400 || elevGain <= 0) return null; // 실제 climb 최소 길이 기준(500m)에 준하는 여유
+    const grade = (elevGain / lengthM) * 100;
+    if (grade < 2) return null; // 너무 완만하면(거의 평지) 확인된 쪽과 같은 오르막이라 보기 어려움
+    return {
+      startIdx, endIdx: peakIdx, peakIdx,
+      startKm: cum[startIdx] / 1000, lengthM, grade, score: lengthM * grade,
+      peakEle: pts[peakIdx].ele, derived: true
+    };
+  }
+  function s1AugmentClimbsWithOverlapPairs(climbs) {
+    const clusters = s1FindSelfOverlapClusters();
+    if (!clusters.length) return climbs;
+    const augmented = climbs.slice();
+    const inRange = (idx, lo, hi) => idx >= lo - 200 && idx <= hi + 200;
+    const MIN_KM_SEP_M = 5000, PARTNER_MAX_M = 200;
+    // 클러스터 범위가 넓어서(수십 km) 그 안에 서로 무관한 오르막이 여러 개 있을 수 있으므로,
+    // "이 범위에 뭔가 있냐"가 아니라 각 오르막마다 "나랑 같은 물리적 지점인 짝이 이미 있냐"를 확인한다.
+    for (const climb of climbs) {
+      const hasPartner = augmented.some(other => other !== climb &&
+        Math.abs(s1CumDist[other.peakIdx] - s1CumDist[climb.peakIdx]) >= MIN_KM_SEP_M &&
+        haversineM(s1Points[climb.peakIdx].lat, s1Points[climb.peakIdx].lon, s1Points[other.peakIdx].lat, s1Points[other.peakIdx].lon) <= PARTNER_MAX_M);
+      if (hasPartner) continue;
+      for (const c of clusters) {
+        const inA = inRange(climb.peakIdx, c.iStart, c.iEnd);
+        const inB = inRange(climb.peakIdx, c.jStart, c.jEnd);
+        if (!inA && !inB) continue;
+        const searchLo = inA ? c.jStart : c.iStart, searchHi = inA ? c.jEnd : c.iEnd;
+        const mirrorPeakIdx = s1FindNearestIdxInRange(climb.peakIdx, searchLo, searchHi);
+        if (mirrorPeakIdx === null) continue;
+        if (augmented.some(cl => Math.abs(cl.peakIdx - mirrorPeakIdx) < 50)) continue;
+        const mirror = s1BuildMirrorClimb(mirrorPeakIdx, climb);
+        if (mirror) augmented.push(mirror);
+        break;
+      }
+    }
+    augmented.sort((a, b) => a.peakIdx - b.peakIdx);
+    return augmented;
+  }
+
   s1ClimbBtn.addEventListener('click', () => {
     if (!s1Points.length) return;
-    const climbs = s1DetectClimbs();
+    const climbs = s1AugmentClimbsWithOverlapPairs(s1DetectClimbs());
     if (!climbs.length) {
       s1ClimbList.innerHTML = `<p style="color:var(--dim);font-size:.85rem;">${t('climbNone')}</p>`;
       s1ClimbSummary.innerHTML = '';
@@ -2566,6 +2639,7 @@ function tunnelWaypointLabel(name) {
             <div class="info">
               ${fmtNum(c.startKm, 1)}km · ${fmtNum(c.lengthM / 1000, 1)}km · ${fmtNum(c.grade, 1)}%
               <span class="cat" style="background:${cat.color};color:#fff;">${cat.label}</span>
+              ${c.derived ? '<span class="cat" style="background:#334155;color:#dde5ef;" title="반대편에서 오르막이 확인돼서 자동으로 추가됨">왕복 반대편</span>' : ''}
               <br><b>${Math.round(c.peakEle)}m</b>
             </div>
             <button type="button" class="climb-create-btn" data-idx="${idx}">${t('climbCreateBtn')}</button>
@@ -2627,11 +2701,17 @@ function tunnelWaypointLabel(name) {
     };
   }
 
+  // 오르막 생성 전용 중복 판정 — 좌표 대신 트랙 인덱스(arrIdx)로 비교한다. 왕복 양방향 정상은
+  // 우연히 좌표가 거의(또는 완전히) 겹칠 수 있는데(실측: 0.09m까지 붙은 사례 있음) 그것도 서로
+  // 다른 오르막(다른 arrIdx)이니 둘 다 만들어져야 함 — 좌표 기준(hasCoordCollision)으로 막으면
+  // 진짜 같은 지점을 두 번 누른 경우와 구분이 안 됨. 같은 arrIdx를 다시 만들려는 경우만 막는다.
+  function s1HasClimbIdxCollision(arrIdx) {
+    return s1Waypoints.some(w => w.arrIdx === arrIdx);
+  }
   async function s1TryCreateClimbWaypoint(c) {
-    const p = s1Points[c.peakIdx];
-    if (hasCoordCollision(p.lat, p.lon)) return 'collision';
+    if (s1HasClimbIdxCollision(c.peakIdx)) return 'collision';
     const wpt = await s1ResolveClimbWaypoint(c.peakIdx);
-    if (hasCoordCollision(wpt.lat, wpt.lon)) return 'collision'; // 터널입구로 옮긴 자리가 겹칠 수도 있어 재확인
+    if (s1HasClimbIdxCollision(wpt.arrIdx)) return 'collision'; // 터널입구로 옮긴 자리가 겹칠 수도 있어 재확인
     s1WptPushUndo();
     s1Waypoints.push(wpt);
     return 'created';
@@ -2660,8 +2740,7 @@ function tunnelWaypointLabel(name) {
     for (const b of btns) {
       const c = climbs[parseInt(b.dataset.idx)];
       if (!c) continue;
-      const p = s1Points[c.peakIdx];
-      if (hasCoordCollision(p.lat, p.lon)) {
+      if (s1HasClimbIdxCollision(c.peakIdx)) {
         b.textContent = t('climbSkipped');
       } else {
         jobs.push({ b, c });
@@ -2669,15 +2748,17 @@ function tunnelWaypointLabel(name) {
     }
     // 2단계: 지명 조회는 전부 동시에 (병렬) - 순차 대기 방지
     if (jobs.length) s1WptPushUndo(); // 여러 개를 한 번에 추가해도 되돌리기는 한 번에
-    await Promise.all(jobs.map(async job => {
-      const wpt = await s1ResolveClimbWaypoint(job.c.peakIdx);
-      if (hasCoordCollision(wpt.lat, wpt.lon)) {
+    const resolved = await Promise.all(jobs.map(job => s1ResolveClimbWaypoint(job.c.peakIdx).then(wpt => ({ job, wpt }))));
+    // 3단계: 생성은 순서대로 처리 — 같은 배치 안에서 같은 arrIdx로 겹치는 경우가 있어도
+    // 먼저 만든 쪽이 실제로 push된 뒤에 다음 걸 판정해야 서로 중복 생성을 못 막고 지나가는 레이스가 안 생김
+    for (const { job, wpt } of resolved) {
+      if (s1HasClimbIdxCollision(wpt.arrIdx)) {
         job.b.textContent = t('climbSkipped');
-        return;
+        continue;
       }
       s1Waypoints.push(wpt);
       job.b.textContent = t('climbCreated');
-    }));
+    }
 
     s1Waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
     s1RenderWaypoints();
@@ -2935,6 +3016,9 @@ function tunnelWaypointLabel(name) {
     sRunBtn.style.display = 'none';
     sProgress.style.display = 'flex';
     sProgressText.textContent = t('s1ProgressText');
+    // 보정 끝나기 전에 오르막 자동 감지를 누르면 옛(원본) 고도로 감지가 되어버려서(분할보정은
+    // 특히 시간이 더 걸림) 감지 결과가 실제와 달라질 수 있음 — 보정 끝날 때까지 잠가둠
+    s1ClimbBtn.disabled = true;
 
     const beforeGain = Math.round(s1CalcStats(s1Points, 0).gain);
 
@@ -2993,6 +3077,7 @@ function tunnelWaypointLabel(name) {
       sRunBtn.style.display = 'flex';
     } finally {
       sProgress.style.display = 'none';
+      s1ClimbBtn.disabled = false;
     }
   });
 
@@ -3092,6 +3177,35 @@ function tunnelWaypointLabel(name) {
   let s1WptMapL = null, s1WptMapLTrackLayer = null, s1WptMapLMarkerGroup = null, s1WptMapLMarkers = [], s1WptMapLFitTarget = null;
   let s1WptMapPendingBounds = null; // provider 전환 직전 화면 범위 — 전환 후에도 같은 화면을 유지하기 위함(트랙 전체 fit 방지)
 
+  // 왕복 양방향 정상처럼 실제 좌표가 몇 m 이내로 붙어있으면 지도에서 마커 하나로 겹쳐 보여서
+  // 몇 개가 있는지 눈으로 구분이 안 됨 — 실제 데이터(s1Waypoints)는 그대로 두고, 지도에 마커를
+  // "그릴 때"만 서로 살짝 벌려서 개수를 눈으로 알아볼 수 있게 한다.
+  const WPT_MAP_DECLUTTER_THRESHOLD_M = 5, WPT_MAP_DECLUTTER_RADIUS_M = 4;
+  function s1ComputeWptDisplayPositions(waypoints) {
+    const positions = waypoints.map(w => ({ lat: w.lat, lon: w.lon }));
+    const used = new Array(waypoints.length).fill(false);
+    for (let i = 0; i < waypoints.length; i++) {
+      if (used[i]) continue;
+      const cluster = [i];
+      for (let j = i + 1; j < waypoints.length; j++) {
+        if (used[j]) continue;
+        if (haversineM(waypoints[i].lat, waypoints[i].lon, waypoints[j].lat, waypoints[j].lon) <= WPT_MAP_DECLUTTER_THRESHOLD_M) cluster.push(j);
+      }
+      if (cluster.length > 1) {
+        cluster.forEach(idx => used[idx] = true);
+        const centerLat = waypoints[i].lat, centerLon = waypoints[i].lon;
+        const mPerDegLat = 111320, mPerDegLon = 111320 * Math.cos(centerLat * Math.PI / 180);
+        cluster.forEach((idx, k) => {
+          const angle = (k / cluster.length) * 2 * Math.PI;
+          positions[idx] = {
+            lat: centerLat + (WPT_MAP_DECLUTTER_RADIUS_M / mPerDegLat) * Math.cos(angle),
+            lon: centerLon + (WPT_MAP_DECLUTTER_RADIUS_M / mPerDegLon) * Math.sin(angle)
+          };
+        });
+      }
+    }
+    return positions;
+  }
   function s1WptMapMarkerImage(type) {
     return new kakao.maps.MarkerImage(wptMapMarkerSrc(type), new kakao.maps.Size(30, 30), { offset: new kakao.maps.Point(15, 15) });
   }
@@ -3428,9 +3542,10 @@ function tunnelWaypointLabel(name) {
     }
 
     s1WptMapMarkers.forEach(m => m.setMap(null));
-    s1WptMapMarkers = s1Waypoints.map(w => {
+    const s1WptDisplayPos = s1ComputeWptDisplayPositions(s1Waypoints);
+    s1WptMapMarkers = s1Waypoints.map((w, i) => {
       const marker = new kakao.maps.Marker({
-        position: new kakao.maps.LatLng(w.lat, w.lon),
+        position: new kakao.maps.LatLng(s1WptDisplayPos[i].lat, s1WptDisplayPos[i].lon),
         image: s1WptMapMarkerImage(w.type)
       });
       kakao.maps.event.addListener(marker, 'click', () => s1OpenWptMapPopup(marker, w));
@@ -3512,8 +3627,9 @@ function tunnelWaypointLabel(name) {
     }
 
     s1WptMapLMarkerGroup.clearLayers();
-    s1WptMapLMarkers = s1Waypoints.map(w => {
-      const marker = L.marker([w.lat, w.lon], { icon: s1WptMapIconLeaflet(w.type) });
+    const s1WptDisplayPosOsm = s1ComputeWptDisplayPositions(s1Waypoints);
+    s1WptMapLMarkers = s1Waypoints.map((w, i) => {
+      const marker = L.marker([s1WptDisplayPosOsm[i].lat, s1WptDisplayPosOsm[i].lon], { icon: s1WptMapIconLeaflet(w.type) });
       marker.bindPopup(() => s1WptMapPopupEl(w));
       marker.addTo(s1WptMapLMarkerGroup);
       return marker;
@@ -4353,6 +4469,11 @@ document.getElementById('climbModalOverlay').addEventListener('click', e => {
 function hasCoordCollisionT2(lat, lon) {
   return waypoints.some(w => Math.abs(parseFloat(w.latStr) - lat) < 1e-6 && Math.abs(parseFloat(w.lonStr) - lon) < 1e-6);
 }
+// 오르막 생성 전용 중복 판정 — 좌표 대신 트랙 인덱스(arrIdx)로 비교 (Tab1과 동일 이유:
+// 왕복 양방향 정상이 우연히 좌표가 거의 겹쳐도 서로 다른 오르막이니 둘 다 만들어져야 함)
+function hasClimbIdxCollisionT2(arrIdx) {
+  return waypoints.some(w => w.arrIdx === arrIdx);
+}
 
 // "Start/Finish 생성" 버튼 클릭 시 트랙 시작/끝에 웨이포인트 생성 (이미 그 근처에 웨이포인트가 있으면 중복 생성 안 함)
 // — 예전엔 파일 불러오면 자동으로 생겼는데, 버튼 눌러야만 생기는 방식으로 변경함
@@ -4409,13 +4530,12 @@ document.getElementById('climbList').addEventListener('click', async e => {
   if (!c) return;
   btn.disabled = true;
   btn.textContent = '...';
-  const p = points[c.peakIdx];
-  if (hasCoordCollisionT2(p.lat, p.lon)) {
+  if (hasClimbIdxCollisionT2(c.peakIdx)) {
     btn.textContent = t('climbSkipped');
     return;
   }
   const wpt = await resolveClimbWaypointT2(c.peakIdx);
-  if (hasCoordCollisionT2(parseFloat(wpt.latStr), parseFloat(wpt.lonStr))) {
+  if (hasClimbIdxCollisionT2(wpt.arrIdx)) {
     btn.textContent = t('climbSkipped');
     return;
   }
@@ -4435,22 +4555,23 @@ document.getElementById('climbCreateAllBtn').addEventListener('click', async () 
   for (const b of btns) {
     const c = climbs[parseInt(b.dataset.idx)];
     if (!c) continue;
-    const p = points[c.peakIdx];
-    if (hasCoordCollisionT2(p.lat, p.lon)) {
+    if (hasClimbIdxCollisionT2(c.peakIdx)) {
       b.textContent = t('climbSkipped');
     } else {
       jobs.push({ b, c });
     }
   }
-  await Promise.all(jobs.map(async job => {
-    const wpt = await resolveClimbWaypointT2(job.c.peakIdx);
-    if (hasCoordCollisionT2(parseFloat(wpt.latStr), parseFloat(wpt.lonStr))) {
+  const resolved = await Promise.all(jobs.map(job => resolveClimbWaypointT2(job.c.peakIdx).then(wpt => ({ job, wpt }))));
+  // 같은 배치 안에서도 먼저 만든 쪽이 실제로 push된 뒤에 다음 걸 판정해야
+  // 서로 중복 생성을 못 막고 지나가는 레이스가 안 생김
+  for (const { job, wpt } of resolved) {
+    if (hasClimbIdxCollisionT2(wpt.arrIdx)) {
       job.b.textContent = t('climbSkipped');
-      return;
+      continue;
     }
     waypoints.push(wpt);
     job.b.textContent = t('climbCreated');
-  }));
+  }
 
   waypoints.sort((a, b) => a.arrIdx - b.arrIdx);
   renderWaypoints();
@@ -4591,6 +4712,16 @@ wptList.addEventListener('click', e => {
       if (row) wptFocusMapOnIdx(parseInt(row.dataset.idx));
     }
   }
+});
+
+// 이름 수정 중 Enter 치면 저장(✓) 버튼 누른 것과 동일하게 처리
+wptList.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (!e.target.closest('.wpt-edit-name')) return;
+  e.preventDefault();
+  const row = e.target.closest('.wpt-row');
+  const saveBtn = row && row.querySelector('.wpt-save-btn');
+  if (saveBtn) saveBtn.click();
 });
 
 // 이름 클릭 시 지도에서 해당 웨이포인트 위치로 이동 + 지도가 보이도록 자동 스크롤
