@@ -6,7 +6,7 @@
 <title>GPX 원본고도 복원기</title>
 <meta name="color-scheme" content="dark">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=087df90dc4fa46d895cf2b1e374d3eff"></script>
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=087df90dc4fa46d895cf2b1e374d3eff&libraries=services"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <style>
@@ -425,6 +425,30 @@
   }
   #paramInput:focus { border-color:var(--accent); }
 
+  /* ── 매개변수 입력창 (웨이포인트 창 옆으로 이동) ── */
+  #s1WptParamBar, #wptParamBar {
+    display:none;
+    align-items:center;
+    gap:8px;
+    margin:0 0 12px;
+    font-size:.84rem;
+  }
+  #s1WptParamBar label, #wptParamBar label { color:var(--dim); white-space:nowrap; flex-shrink:0; }
+  #paramInputS1 {
+    flex:0 0 120px;
+    min-width:0;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:7px 10px;
+    color:var(--text);
+    font-size:.86rem;
+    font-family:inherit;
+    outline:none;
+    transition:border-color .2s;
+  }
+  #paramInputS1:focus { border-color:var(--accent); }
+
   /* ── Run button ── */
   #runBtn {
     display:none;
@@ -727,6 +751,33 @@
     font-family:inherit;
   }
   .wpt-map-provider-btn.active { background:var(--accent); color:#04121c; border-color:var(--accent); }
+  .wpt-map-search { display:flex; gap:6px; margin-bottom:10px; }
+  .wpt-map-search input {
+    flex:1;
+    min-width:0;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:7px 10px;
+    color:var(--text);
+    font-size:.86rem;
+    font-family:inherit;
+    outline:none;
+    transition:border-color .2s;
+  }
+  .wpt-map-search input:focus { border-color:var(--accent); }
+  .wpt-map-search button {
+    flex-shrink:0;
+    width:34px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:var(--card);
+    color:var(--dim);
+    font-size:.95rem;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .wpt-map-search button:hover { color:var(--text); border-color:var(--accent); }
   .map-hint {
     margin-top:10px;
     font-size:.78rem;
@@ -1133,7 +1184,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.31</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.32</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1237,6 +1288,10 @@
         </div>
       </div>
     </div>
+    <div class="wpt-map-search">
+      <input type="text" id="s1WptMapSearchInput" placeholder="장소 검색" autocomplete="off" spellcheck="false">
+      <button type="button" id="s1WptMapSearchBtn" title="검색">🔍</button>
+    </div>
     <div id="s1WptMap"></div>
     <p class="map-hint" data-i18n="mapHint">지도를 클릭하면 가장 가까운 트랙 지점에 웨이포인트가 생성됩니다. 마커를 클릭해 이름·유형을 수정하거나 삭제할 수 있습니다.</p>
   </div>
@@ -1248,6 +1303,10 @@
     <button type="button" class="wpt-head-btn" id="s1BtnCsv" data-i18n="exportCsvShort">CSV</button>
     <button type="button" class="wpt-head-btn accent" id="s1ClimbBtn" data-i18n="climbDetectBtn">⛰️ 오르막 자동 감지</button>
     <button type="button" class="wpt-head-btn" id="s1StartFinishBtn" data-i18n="startFinishBtn">🚩 Start/Finish 생성</button>
+  </div>
+  <div id="s1WptParamBar">
+    <label for="paramInputS1" data-i18n="paramLabel">매개변수</label>
+    <input type="text" id="paramInputS1" autocomplete="off" spellcheck="false">
   </div>
   <div id="s1WptSaveBar" class="wpt-save-bar">
     <span id="s1WptSaveCount"></span>
@@ -1273,8 +1332,6 @@
   <div id="stravaOptionsBar">
     <label for="stravaCourseName" data-i18n="courseNameLabel">코스 이름</label>
     <input type="text" id="stravaCourseName" autocomplete="off" spellcheck="false">
-    <label for="paramInputS1" data-i18n="paramLabel">매개변수</label>
-    <input type="text" id="paramInputS1" autocomplete="off" spellcheck="false">
   </div>
 
   <div id="s1DownloadBar">
@@ -1344,8 +1401,6 @@
   <label for="courseNameInput" data-i18n="courseNameLabel">코스 이름</label>
   <input type="text" id="courseNameInput" autocomplete="off" spellcheck="false"
          title="GPX/TCX 파일의 name 태그와 다운로드 파일명에 사용됩니다">
-  <label for="paramInput" data-i18n="paramLabel">매개변수</label>
-  <input type="text" id="paramInput" autocomplete="off" spellcheck="false">
 </div>
 
 <!-- Run -->
@@ -1413,6 +1468,10 @@
       </div>
     </div>
   </div>
+  <div class="wpt-map-search">
+    <input type="text" id="wptMapSearchInput" placeholder="장소 검색" autocomplete="off" spellcheck="false">
+    <button type="button" id="wptMapSearchBtn" title="검색">🔍</button>
+  </div>
   <div id="wptMap"></div>
   <p class="map-hint" data-i18n="mapHint">지도를 클릭하면 가장 가까운 트랙 지점에 웨이포인트가 생성됩니다. 마커를 클릭해 이름·유형을 수정하거나 삭제할 수 있습니다.</p>
 </div>
@@ -1425,6 +1484,10 @@
   <button type="button" class="wpt-head-btn" id="btnCsv" data-i18n="exportCsvShort">CSV</button>
   <button type="button" class="wpt-head-btn accent" id="climbBtn" data-i18n="climbDetectBtn">⛰️ 오르막 자동 감지</button>
   <button type="button" class="wpt-head-btn" id="startFinishBtn" data-i18n="startFinishBtn">🚩 Start/Finish 생성</button>
+</div>
+<div id="wptParamBar">
+  <label for="paramInput" data-i18n="paramLabel">매개변수</label>
+  <input type="text" id="paramInput" autocomplete="off" spellcheck="false">
 </div>
 <div id="wptSaveBar" class="wpt-save-bar">
   <span id="wptSaveCount"></span>
@@ -1482,7 +1545,7 @@
 
 </main>
 
-<footer id="footerText">v3.31 (2026.09.29) · Made by 오동도</footer>
+<footer id="footerText">v3.32 (2026.09.30) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1556,6 +1619,8 @@ const I18N = {
     mapSave:'저장',
     mapCancel:'취소',
     mapLocateFail:'현재 위치를 가져올 수 없습니다.',
+    mapSearchPh:'장소 검색',
+    mapSearchNoResult:'검색 결과가 없습니다.',
     mapFullscreen:'전체화면',
     mapExitFullscreen:'전체화면 종료',
     mapMenuCreate:'📍 웨이포인트 생성',
@@ -1659,6 +1724,8 @@ const I18N = {
     mapSave:'Save',
     mapCancel:'Cancel',
     mapLocateFail:'Could not get your current location.',
+    mapSearchPh:'Search places',
+    mapSearchNoResult:'No results found.',
     mapFullscreen:'Fullscreen',
     mapExitFullscreen:'Exit fullscreen',
     mapMenuCreate:'📍 Create waypoint',
@@ -1761,6 +1828,8 @@ const I18N = {
     mapSave:'保存',
     mapCancel:'キャンセル',
     mapLocateFail:'現在地を取得できませんでした。',
+    mapSearchPh:'場所を検索',
+    mapSearchNoResult:'検索結果がありません。',
     mapFullscreen:'全画面表示',
     mapExitFullscreen:'全画面表示を終了',
     mapMenuCreate:'📍 ウェイポイント作成',
@@ -1810,13 +1879,15 @@ function applyLang() {
   });
   document.querySelectorAll('.lang-switch button').forEach(b =>
     b.classList.toggle('on', b.dataset.lang === lang));
+  document.getElementById('s1WptMapSearchInput').placeholder = t('mapSearchPh');
+  document.getElementById('wptMapSearchInput').placeholder = t('mapSearchPh');
   renderFooter();
   if (lastResult) { renderRestoreInfo(); renderGainCompare(); }
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.31';
-const APP_DATE = '2026.09.29';
+const APP_VERSION = 'v3.32';
+const APP_DATE = '2026.09.30';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
   document.getElementById('footerText').textContent =
@@ -1923,6 +1994,7 @@ const statsGrid      = document.getElementById('statsGrid');
 const wptWrap        = document.getElementById('wptWrap');
 const wptMapWrap     = document.getElementById('wptMapWrap');
 const wptHeadRow     = document.getElementById('wptHeadRow');
+const wptParamBar    = document.getElementById('wptParamBar');
 const wptUndoBtn     = document.getElementById('wptUndoBtn');
 const wptRedoBtn     = document.getElementById('wptRedoBtn');
 const wptSaveBar     = document.getElementById('wptSaveBar');
@@ -2017,6 +2089,15 @@ function haversineM(lat1, lon1, lat2, lon2) {
   const df = (lat2 - lat1) * Math.PI / 180, dl = (lon2 - lon1) * Math.PI / 180;
   const x = Math.sin(df / 2) ** 2 + Math.cos(f1) * Math.cos(f2) * Math.sin(dl / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+// 카카오맵 장소 검색(키워드) — SDK를 &libraries=services 로 로드해야 kakao.maps.services가 존재함
+function kakaoPlacesSearch(query, onResult, onError) {
+  if (typeof kakao === 'undefined' || !kakao.maps || !kakao.maps.services) { onError && onError('unavailable'); return; }
+  const places = new kakao.maps.services.Places();
+  places.keywordSearch(query, (results, status) => {
+    if (status === kakao.maps.services.Status.OK && results.length) onResult(results[0]);
+    else onError && onError(status);
+  });
 }
 function pointToPolylineDistanceM(lat, lon, polyline) {
   let best = Infinity;
@@ -2129,6 +2210,7 @@ function tunnelWaypointLabel(name) {
   const s1WptWrap      = document.getElementById('s1WptWrap');
   const s1WptMapWrap   = document.getElementById('s1WptMapWrap');
   const s1WptHeadRow   = document.getElementById('s1WptHeadRow');
+  const s1WptParamBar  = document.getElementById('s1WptParamBar');
   const s1WptUndoBtn   = document.getElementById('s1WptUndoBtn');
   const s1WptRedoBtn   = document.getElementById('s1WptRedoBtn');
   const s1WptSaveBar   = document.getElementById('s1WptSaveBar');
@@ -2992,6 +3074,7 @@ function tunnelWaypointLabel(name) {
         s1RenderStats(0);
         s1RenderWaypoints();
         s1WptHeadRow.style.display = 'flex';
+        s1WptParamBar.style.display = 'flex';
         s1ControlBar.style.display = 'flex';
 
         // 차트(가장 무거운 부분)는 한 번 더 양보한 뒤에
@@ -3333,6 +3416,8 @@ function tunnelWaypointLabel(name) {
   function s1HandleWptMapCreate(lat, lng, clickPx) {
     if (!s1Points.length) return;
     if (s1WptMapPendingMarker) { s1WptMapClearPending(); return; } // 이미 뜬 임시 마커가 있으면 지도 아무 곳이나 클릭 시 그냥 취소만
+    // 기존 웨이포인트 편집 팝업(카카오 CustomOverlay)이 떠 있으면, 지도 아무 곳이나 클릭 시 저장/삭제 없이 그냥 닫기만
+    if (s1WptMapOverlay) { s1CloseWptMapOverlay(); return; }
     // 방금 호버 중이던 지점(우클릭으로 겹친 구간 순환했을 수 있음)과 클릭 위치가 같은 자리면 그 지점을 그대로 사용
     const useHover = clickPx && s1WptMapHoverIdx !== null &&
       Math.hypot(s1WptMapHoverX - clickPx.x, s1WptMapHoverY - clickPx.y) <= WPT_CREATE_CLICK_PX;
@@ -3755,6 +3840,25 @@ function tunnelWaypointLabel(name) {
   document.getElementById('s1WptMapFitBtn').addEventListener('click', s1WptMapFitToBounds);
   document.getElementById('s1WptMapLocateBtn').addEventListener('click', s1WptMapLocateMe);
 
+  // ── 카카오맵 장소 검색 ──
+  function s1WptMapSearch() {
+    const q = document.getElementById('s1WptMapSearchInput').value.trim();
+    if (!q) return;
+    kakaoPlacesSearch(q, place => {
+      const lat = parseFloat(place.y), lng = parseFloat(place.x);
+      if (wptMapProvider === 'osm') {
+        if (!s1WptMapL) return;
+        s1WptMapL.setView([lat, lng], 16);
+      } else {
+        if (!s1WptMap) return;
+        s1WptMap.setCenter(new kakao.maps.LatLng(lat, lng));
+        s1WptMap.setLevel(4);
+      }
+    }, () => showSError(t('mapSearchNoResult')));
+  }
+  document.getElementById('s1WptMapSearchBtn').addEventListener('click', s1WptMapSearch);
+  document.getElementById('s1WptMapSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') s1WptMapSearch(); });
+
   // ── 지도 전체화면 (Fullscreen API) ──
   function s1WptMapToggleFullscreen() {
     const inFs = document.fullscreenElement || document.webkitFullscreenElement;
@@ -3794,6 +3898,7 @@ function tunnelWaypointLabel(name) {
     sFileBadge.style.display = 'none';
     s1StatsGrid.style.display = 'none';
     s1WptHeadRow.style.display = 'none';
+    s1WptParamBar.style.display = 'none';
     s1WptWrap.style.display = 'none';
     s1ControlBar.style.display = 'none';
     s1ChartWrap.style.display = 'none';
@@ -3872,7 +3977,7 @@ runBtn.addEventListener('click', () => {
 
 function hideResults() {
   lastResult = null;
-  [restoreEl, exportBar, controlBar, statsGrid, wptMapWrap, wptWrap, wptHeadRow, wptSaveBar, chartWrap, runBtn, courseNameBar]
+  [restoreEl, exportBar, controlBar, statsGrid, wptMapWrap, wptWrap, wptHeadRow, wptParamBar, wptSaveBar, chartWrap, runBtn, courseNameBar]
     .forEach(el => el.style.display = 'none');
 }
 
@@ -4068,6 +4173,7 @@ function process(text, fname, format) {
   exportBar.style.display = 'flex';
   controlBar.style.display = 'flex';
   wptHeadRow.style.display = 'flex';
+  wptParamBar.style.display = 'flex';
   renderStats(s);
   renderWaypoints();
   drawChart();
@@ -4955,6 +5061,8 @@ const WPT_CREATE_CLICK_PX = 25; // 이 픽셀 거리보다 멀리서 클릭하�
 function handleWptMapCreate(lat, lng, clickPx) {
   if (!points.length) return;
   if (wptMapPendingMarker) { wptMapClearPending(); return; } // 이미 뜬 임시 마커가 있으면 지도 아무 곳이나 클릭 시 그냥 취소만
+  // 기존 웨이포인트 편집 팝업(카카오 CustomOverlay)이 떠 있으면, 지도 아무 곳이나 클릭 시 저장/삭제 없이 그냥 닫기만
+  if (wptMapOverlay) { closeWptMapOverlay(); return; }
   // 방금 호버 중이던 지점(우클릭으로 겹친 구간 순환했을 수 있음)과 클릭 위치가 같은 자리면 그 지점을 그대로 사용
   const useHover = clickPx && wptMapHoverIdx !== null &&
     Math.hypot(wptMapHoverX - clickPx.x, wptMapHoverY - clickPx.y) <= WPT_CREATE_CLICK_PX;
@@ -5377,6 +5485,25 @@ function wptMapLocateMe() {
 
 document.getElementById('wptMapFitBtn').addEventListener('click', wptMapFitToBounds);
 document.getElementById('wptMapLocateBtn').addEventListener('click', wptMapLocateMe);
+
+// ── 카카오맵 장소 검색 ──
+function wptMapSearch() {
+  const q = document.getElementById('wptMapSearchInput').value.trim();
+  if (!q) return;
+  kakaoPlacesSearch(q, place => {
+    const lat = parseFloat(place.y), lng = parseFloat(place.x);
+    if (wptMapProvider === 'osm') {
+      if (!wptMapL) return;
+      wptMapL.setView([lat, lng], 16);
+    } else {
+      if (!wptMap) return;
+      wptMap.setCenter(new kakao.maps.LatLng(lat, lng));
+      wptMap.setLevel(4);
+    }
+  }, () => showError(t('mapSearchNoResult')));
+}
+document.getElementById('wptMapSearchBtn').addEventListener('click', wptMapSearch);
+document.getElementById('wptMapSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') wptMapSearch(); });
 
 // ── 지도 전체화면 (Fullscreen API) ──
 function wptMapToggleFullscreen() {
