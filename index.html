@@ -751,7 +751,7 @@
     font-family:inherit;
   }
   .wpt-map-provider-btn.active { background:var(--accent); color:#04121c; border-color:var(--accent); }
-  .wpt-map-search { display:flex; gap:6px; margin-bottom:10px; }
+  .wpt-map-search { position:relative; display:flex; gap:6px; margin-bottom:10px; }
   .wpt-map-search input {
     flex:1;
     min-width:0;
@@ -778,6 +778,59 @@
     font-family:inherit;
   }
   .wpt-map-search button:hover { color:var(--text); border-color:var(--accent); }
+  .wpt-map-search-results {
+    display:none;
+    position:absolute;
+    top:calc(100% + 6px);
+    left:0;
+    right:0;
+    z-index:20;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:10px;
+    box-shadow:0 4px 16px rgba(0,0,0,.4);
+    max-height:220px;
+    overflow-y:auto;
+  }
+  .wpt-map-search-result {
+    padding:9px 12px;
+    cursor:pointer;
+    border-bottom:1px solid var(--border);
+    font-size:.85rem;
+  }
+  .wpt-map-search-result:last-child { border-bottom:none; }
+  .wpt-map-search-result:hover { background:var(--card); }
+  .wpt-map-search-result .name { display:block; color:var(--text); font-weight:600; }
+  .wpt-map-search-result .addr { display:block; color:var(--dim); font-size:.75rem; margin-top:2px; }
+  .wpt-map-search-bounds {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    margin:-4px 0 10px;
+    font-size:.78rem;
+    color:var(--dim);
+    cursor:pointer;
+  }
+  .wpt-map-search-bounds input[type="checkbox"] { accent-color:var(--accent); }
+  .wpt-search-label { display:flex; align-items:center; gap:10px; font-size:.85rem; white-space:nowrap; }
+  .wpt-search-label-close {
+    flex-shrink:0;
+    width:22px;
+    height:22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    border:1px solid var(--border);
+    background:var(--card);
+    color:var(--dim);
+    font-size:.95rem;
+    line-height:1;
+    cursor:pointer;
+    font-family:inherit;
+    padding:0;
+  }
+  .wpt-search-label-close:hover { color:var(--text); border-color:var(--accent); }
   .map-hint {
     margin-top:10px;
     font-size:.78rem;
@@ -943,6 +996,53 @@
     margin-bottom:8px;
     font-size:.8rem;
   }
+  .wpt-save-btns { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+  .wpt-split-panel {
+    display:none;
+    background:var(--surface);
+    border:1px solid var(--accent);
+    border-radius:10px;
+    padding:10px 12px;
+    margin-bottom:10px;
+    font-size:.82rem;
+  }
+  .wpt-split-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .wpt-split-head b { color:var(--text); }
+  .wpt-split-close { background:none; border:none; color:var(--dim); font-size:1rem; cursor:pointer; padding:2px 6px; }
+  .wpt-split-row {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:8px;
+    padding:8px 0;
+    border-top:1px solid var(--border);
+  }
+  .wpt-split-row input[type="text"] {
+    flex:1 1 180px;
+    min-width:0;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:6px 9px;
+    color:var(--text);
+    font-size:.84rem;
+    font-family:inherit;
+    outline:none;
+  }
+  .wpt-split-row input[type="text"]:focus { border-color:var(--accent); }
+  .wpt-split-info { color:var(--dim); font-size:.76rem; white-space:nowrap; }
+  .wpt-split-row button {
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    color:var(--text);
+    font-size:.76rem;
+    font-weight:700;
+    padding:6px 10px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .wpt-split-row button:hover { border-color:var(--accent); }
   .wpt-save-bar button {
     background:linear-gradient(135deg, #123a5c, #0e4e6e);
     border:1px solid #2a6a95;
@@ -1184,7 +1284,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.32</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.34</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1291,7 +1391,12 @@
     <div class="wpt-map-search">
       <input type="text" id="s1WptMapSearchInput" placeholder="장소 검색" autocomplete="off" spellcheck="false">
       <button type="button" id="s1WptMapSearchBtn" title="검색">🔍</button>
+      <div id="s1WptMapSearchResults" class="wpt-map-search-results"></div>
     </div>
+    <label class="wpt-map-search-bounds">
+      <input type="checkbox" id="s1WptMapSearchBoundsChk">
+      <span>지도 범위 내에서 검색</span>
+    </label>
     <div id="s1WptMap"></div>
     <p class="map-hint" data-i18n="mapHint">지도를 클릭하면 가장 가까운 트랙 지점에 웨이포인트가 생성됩니다. 마커를 클릭해 이름·유형을 수정하거나 삭제할 수 있습니다.</p>
   </div>
@@ -1310,8 +1415,12 @@
   </div>
   <div id="s1WptSaveBar" class="wpt-save-bar">
     <span id="s1WptSaveCount"></span>
-    <button type="button" id="s1WptSaveBtn" data-i18n="wptSaveSelected">선택 저장</button>
+    <div class="wpt-save-btns">
+      <button type="button" id="s1WptSplitBtn" data-i18n="wptSplitSelected">선택 지점에서 분할</button>
+      <button type="button" id="s1WptSaveBtn" data-i18n="wptSaveSelected">선택 저장</button>
+    </div>
   </div>
+  <div id="s1SplitPanel" class="wpt-split-panel"></div>
   <div id="s1WptWrap">
     <div id="s1WptList"></div>
   </div>
@@ -1471,7 +1580,12 @@
   <div class="wpt-map-search">
     <input type="text" id="wptMapSearchInput" placeholder="장소 검색" autocomplete="off" spellcheck="false">
     <button type="button" id="wptMapSearchBtn" title="검색">🔍</button>
+    <div id="wptMapSearchResults" class="wpt-map-search-results"></div>
   </div>
+  <label class="wpt-map-search-bounds">
+    <input type="checkbox" id="wptMapSearchBoundsChk">
+    <span>지도 범위 내에서 검색</span>
+  </label>
   <div id="wptMap"></div>
   <p class="map-hint" data-i18n="mapHint">지도를 클릭하면 가장 가까운 트랙 지점에 웨이포인트가 생성됩니다. 마커를 클릭해 이름·유형을 수정하거나 삭제할 수 있습니다.</p>
 </div>
@@ -1491,8 +1605,12 @@
 </div>
 <div id="wptSaveBar" class="wpt-save-bar">
   <span id="wptSaveCount"></span>
-  <button type="button" id="wptSaveBtn" data-i18n="wptSaveSelected">선택 저장</button>
+  <div class="wpt-save-btns">
+    <button type="button" id="wptSplitBtn" data-i18n="wptSplitSelected">선택 지점에서 분할</button>
+    <button type="button" id="wptSaveBtn" data-i18n="wptSaveSelected">선택 저장</button>
+  </div>
 </div>
+<div id="splitPanel" class="wpt-split-panel"></div>
 <div id="wptWrap">
   <div id="wptList"></div>
 </div>
@@ -1545,7 +1663,7 @@
 
 </main>
 
-<footer id="footerText">v3.32 (2026.09.30) · Made by 오동도</footer>
+<footer id="footerText">v3.34 (2026.10.01) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1596,6 +1714,10 @@ const I18N = {
     exportCsv:'웨이포인트 CSV',
     exportCsvShort:'CSV',
     wptSaveSelected:'선택 저장',
+    wptSplitSelected:'선택 지점에서 분할',
+    splitTitle:'코스 분할 ({n}구간)',
+    splitInfo:'{from} ~ {to} km · 웨이포인트 {w}개',
+    splitErrNone:'분할할 수 있는 웨이포인트가 없습니다. (코스 시작/끝 지점은 제외)',
     wptSaveCount:'{n}개 선택됨',
     wptSaving:'저장 중...',
     wptSaveDone:'{n}개 저장 완료 (다음부터 이 위치는 자동으로 이 이름이 붙어요)',
@@ -1701,6 +1823,10 @@ const I18N = {
     exportCsv:'Waypoints CSV',
     exportCsvShort:'CSV',
     wptSaveSelected:'Save Selected',
+    wptSplitSelected:'Split at Selected',
+    splitTitle:'Course split ({n} parts)',
+    splitInfo:'{from} ~ {to} km · {w} waypoints',
+    splitErrNone:'No waypoint to split at. (Course start/end points are excluded)',
     wptSaveCount:'{n} selected',
     wptSaving:'Saving...',
     wptSaveDone:'{n} saved (this location will auto-fill this name next time)',
@@ -1806,6 +1932,10 @@ const I18N = {
     exportCsv:'ウェイポイントCSV',
     exportCsvShort:'CSV',
     wptSaveSelected:'選択を保存',
+    wptSplitSelected:'選択地点で分割',
+    splitTitle:'コース分割 ({n}区間)',
+    splitInfo:'{from} ~ {to} km · ウェイポイント {w}個',
+    splitErrNone:'分割できるウェイポイントがありません。(コースの始点/終点は除外)',
     wptSaveCount:'{n}件選択中',
     wptSaving:'保存中...',
     wptSaveDone:'{n}件保存しました(次回からこの位置に自動でこの名前が入ります)',
@@ -1886,8 +2016,8 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.32';
-const APP_DATE = '2026.09.30';
+const APP_VERSION = 'v3.34';
+const APP_DATE = '2026.10.01';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
   document.getElementById('footerText').textContent =
@@ -2091,13 +2221,23 @@ function haversineM(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
 }
 // 카카오맵 장소 검색(키워드) — SDK를 &libraries=services 로 로드해야 kakao.maps.services가 존재함
-function kakaoPlacesSearch(query, onResult, onError) {
+// onResults는 매칭된 결과 배열 전체를 받음(목록으로 보여주고 사용자가 하나 선택). options.bounds로 검색 범위 제한 가능.
+function kakaoPlacesSearch(query, options, onResults, onError) {
   if (typeof kakao === 'undefined' || !kakao.maps || !kakao.maps.services) { onError && onError('unavailable'); return; }
   const places = new kakao.maps.services.Places();
   places.keywordSearch(query, (results, status) => {
-    if (status === kakao.maps.services.Status.OK && results.length) onResult(results[0]);
+    if (status === kakao.maps.services.Status.OK && results.length) onResults(results);
     else onError && onError(status);
-  });
+  }, options || {});
+}
+// 화면 픽셀 좌표 기준 점-선분 최단거리 (지도 위 클릭이 트랙 "선" 위에 있는지 판정할 때 사용)
+function pointToSegmentDistancePx(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const lenSq = dx * dx + dy * dy;
+  let t = lenSq > 0 ? ((px - x1) * dx + (py - y1) * dy) / lenSq : 0;
+  t = Math.max(0, Math.min(1, t));
+  const nx = x1 + t * dx, ny = y1 + t * dy;
+  return Math.hypot(px - nx, py - ny);
 }
 function pointToPolylineDistanceM(lat, lon, polyline) {
   let best = Infinity;
@@ -2847,10 +2987,10 @@ function tunnelWaypointLabel(name) {
   });
 
   // ── GPX/TCX 재조립 (편집 반영, 클라이언트 사이드) ──
-  function s1BuildGpx(name) {
+  function s1BuildGpx(name, pts = s1Points, wpts = s1Waypoints) {
     const esc = escapeHtml(name);
     let out = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="elevation-corrector-tool" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>' + esc + '</name></metadata>\n';
-    for (const w of s1Waypoints) {
+    for (const w of wpts) {
       const typeVal = w.type || 'Generic';
       out += '<wpt lat="' + w.lat + '" lon="' + w.lon + '" type="' + escapeHtml(typeVal) + '">';
       if (w.name) out += '<name>' + escapeHtml(w.name) + '</name>';
@@ -2858,7 +2998,7 @@ function tunnelWaypointLabel(name) {
       out += '</wpt>\n';
     }
     out += '<trk><name>' + esc + '</name><trkseg>\n';
-    for (const p of s1Points) {
+    for (const p of pts) {
       out += '<trkpt lat="' + p.lat + '" lon="' + p.lon + '"><ele>' + p.ele + '</ele>';
       if (p.time) out += '<time>' + p.time + '</time>';
       out += '</trkpt>\n';
@@ -2985,20 +3125,21 @@ function tunnelWaypointLabel(name) {
     return merged;
   }
 
-  function s1BuildTcx(name) {
+  // pts/wpts/cum을 넘기면 그 구간만 조립 (코스 분할용). wpts의 arrIdx와 cum은 pts 기준(0부터)이어야 함
+  function s1BuildTcx(name, pts = s1Points, wpts = s1Waypoints, cum = s1CumDist) {
     const esc = escapeHtml(name);
     const speedMs = 20 * 1000 / 3600;
     const startMs = Date.now();
     let out = '<?xml version="1.0" encoding="utf-8" standalone="no"?>\n<!-- elevation-corrector-tool -->\n<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">\n<Folders />\n<Courses>\n<Course>\n<Name>' + esc + '</Name>\n<Lap>\n';
-    out += '<TotalTimeSeconds>' + Math.round((s1CumDist[s1CumDist.length - 1] || 0) / speedMs) + '</TotalTimeSeconds>\n<DistanceMeters>' + (s1CumDist[s1CumDist.length - 1] || 0).toFixed(2) + '</DistanceMeters>\n<Intensity>Active</Intensity>\n</Lap>\n<Track>\n';
-    for (let i = 0; i < s1Points.length; i++) {
-      const p = s1Points[i];
-      const t = new Date(startMs + Math.round(s1CumDist[i] / speedMs) * 1000);
-      out += '<Trackpoint><Time>' + t.toISOString().replace(/\.\d{3}Z$/, 'Z') + '</Time><Position><LatitudeDegrees>' + p.lat + '</LatitudeDegrees><LongitudeDegrees>' + p.lon + '</LongitudeDegrees></Position><AltitudeMeters>' + p.ele + '</AltitudeMeters><DistanceMeters>' + s1CumDist[i].toFixed(2) + '</DistanceMeters></Trackpoint>\n';
+    out += '<TotalTimeSeconds>' + Math.round((cum[cum.length - 1] || 0) / speedMs) + '</TotalTimeSeconds>\n<DistanceMeters>' + (cum[cum.length - 1] || 0).toFixed(2) + '</DistanceMeters>\n<Intensity>Active</Intensity>\n</Lap>\n<Track>\n';
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      const t = new Date(startMs + Math.round(cum[i] / speedMs) * 1000);
+      out += '<Trackpoint><Time>' + t.toISOString().replace(/\.\d{3}Z$/, 'Z') + '</Time><Position><LatitudeDegrees>' + p.lat + '</LatitudeDegrees><LongitudeDegrees>' + p.lon + '</LongitudeDegrees></Position><AltitudeMeters>' + p.ele + '</AltitudeMeters><DistanceMeters>' + cum[i].toFixed(2) + '</DistanceMeters></Trackpoint>\n';
     }
     out += '</Track>\n';
-    for (const w of s1Waypoints) {
-      const t2 = new Date(startMs + Math.round(s1CumDist[w.arrIdx] / speedMs) * 1000);
+    for (const w of wpts) {
+      const t2 = new Date(startMs + Math.round(cum[w.arrIdx] / speedMs) * 1000);
       out += '<CoursePoint><Name>' + escapeHtml(w.name || '') + '</Name><Time>' + t2.toISOString().replace(/\.\d{3}Z$/, 'Z') + '</Time><Position><LatitudeDegrees>' + w.lat + '</LatitudeDegrees><LongitudeDegrees>' + w.lon + '</LongitudeDegrees></Position><PointType>' + escapeHtml(w.type || 'Generic') + '</PointType></CoursePoint>\n';
     }
     out += '</Course>\n</Courses>\n</TrainingCenterDatabase>';
@@ -3061,6 +3202,7 @@ function tunnelWaypointLabel(name) {
         s1EditingWptIdx = null;
         s1SelectedWpt = new Set();
         s1Corrected = false;
+        s1SplitCuts = []; s1RenderSplitPanel();
 
         sFileName.textContent = file.name;
         sFileBadge.style.display = 'flex';
@@ -3165,10 +3307,7 @@ function tunnelWaypointLabel(name) {
   });
 
   // ── 다운로드 (이 시점에 이름 반영해서 클라이언트에서 조립) ──
-  function s1Download(format) {
-    if (!s1Points.length) return;
-    const name = (sCourseName.value || 'course').trim() || 'course';
-    const content = format === 'tcx' ? s1BuildTcx(name) : s1BuildGpx(name);
+  function s1SaveFile(content, name, format) {
     const finalName = sanitizeFilename(name) || 'course';
     const mime = format === 'tcx' ? 'application/vnd.garmin.tcx+xml' : 'application/gpx+xml';
     const blob = new Blob([content], { type: mime });
@@ -3179,8 +3318,79 @@ function tunnelWaypointLabel(name) {
     a.click();
     document.body.removeChild(a);
   }
+  function s1Download(format) {
+    if (!s1Points.length) return;
+    const name = (sCourseName.value || 'course').trim() || 'course';
+    s1SaveFile(format === 'tcx' ? s1BuildTcx(name) : s1BuildGpx(name), name, format);
+  }
   s1BtnGpx.addEventListener('click', () => s1Download('gpx'));
   s1BtnTcx.addEventListener('click', () => s1Download('tcx'));
+
+  // ── 코스 분할: 선택한 웨이포인트 위치에서 코스를 나눠 구간별 GPX/TCX 저장 ──
+  // 분할 지점은 앞 구간의 끝이자 뒤 구간의 시작 — 그 지점의 웨이포인트는 양쪽 파일에 다 들어감
+  const s1SplitPanel = document.getElementById('s1SplitPanel');
+  let s1SplitCuts = [];
+
+  function s1SplitPartData(k) {
+    const bounds = [0, ...s1SplitCuts, s1Points.length - 1];
+    const start = bounds[k], end = bounds[k + 1];
+    const pts = s1Points.slice(start, end + 1);
+    const base = s1CumDist[start];
+    const cum = s1CumDist.slice(start, end + 1).map(d => d - base);
+    const wpts = s1Waypoints
+      .filter(w => w.arrIdx >= start && w.arrIdx <= end)
+      .map(w => ({ ...w, arrIdx: w.arrIdx - start }));
+    return { start, end, pts, cum, wpts };
+  }
+
+  function s1RenderSplitPanel() {
+    if (!s1SplitCuts.length) { s1SplitPanel.style.display = 'none'; s1SplitPanel.innerHTML = ''; return; }
+    const baseName = (sCourseName.value || 'course').trim() || 'course';
+    const parts = s1SplitCuts.length + 1;
+    let html = `<div class="wpt-split-head"><b>${escapeHtml(t('splitTitle').replace('{n}', parts))}</b><button type="button" class="wpt-split-close" title="닫기">✕</button></div>`;
+    for (let k = 0; k < parts; k++) {
+      const d = s1SplitPartData(k);
+      const info = t('splitInfo')
+        .replace('{from}', fmtNum(s1CumDist[d.start] / 1000, 1))
+        .replace('{to}', fmtNum(s1CumDist[d.end] / 1000, 1))
+        .replace('{w}', d.wpts.length);
+      html += `<div class="wpt-split-row" data-k="${k}">
+        <input type="text" class="wpt-split-name" value="${escapeAttr(baseName + '_' + (k + 1))}" autocomplete="off" spellcheck="false">
+        <span class="wpt-split-info">${escapeHtml(info)}</span>
+        <button type="button" class="wpt-split-dl" data-format="gpx">GPX</button>
+        <button type="button" class="wpt-split-dl" data-format="tcx">TCX</button>
+      </div>`;
+    }
+    s1SplitPanel.innerHTML = html;
+    s1SplitPanel.style.display = 'block';
+  }
+
+  document.getElementById('s1WptSplitBtn').addEventListener('click', () => {
+    const last = s1Points.length - 1;
+    const cuts = [...new Set(Array.from(s1SelectedWpt).map(i => s1Waypoints[i] && s1Waypoints[i].arrIdx))]
+      .filter(idx => idx !== undefined && idx > 0 && idx < last)
+      .sort((a, b) => a - b);
+    if (!cuts.length) { showSError(t('splitErrNone')); return; }
+    hideSError();
+    s1SplitCuts = cuts;
+    s1RenderSplitPanel();
+    s1SplitPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  s1SplitPanel.addEventListener('click', e => {
+    if (e.target.closest('.wpt-split-close')) { s1SplitCuts = []; s1RenderSplitPanel(); return; }
+    const btn = e.target.closest('.wpt-split-dl');
+    if (!btn) return;
+    const row = btn.closest('.wpt-split-row');
+    const k = parseInt(row.dataset.k);
+    const name = row.querySelector('.wpt-split-name').value.trim() || ('course_' + (k + 1));
+    const d = s1SplitPartData(k);
+    const content = btn.dataset.format === 'tcx' ? s1BuildTcx(name, d.pts, d.wpts, d.cum) : s1BuildGpx(name, d.pts, d.wpts);
+    s1SaveFile(content, name, btn.dataset.format);
+  });
+  s1SplitPanel.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.closest('.wpt-split-name')) e.preventDefault();
+  });
 
   // ── CSV 내보내기 ──
   s1CsvBtn.addEventListener('click', () => {
@@ -3257,6 +3467,7 @@ function tunnelWaypointLabel(name) {
   // ═══════════════════════════════════════════════════════
   // provider 상태는 ②탭과 전역(wptMapProvider) 공유 — 한 번 고르면 두 탭에 동일 적용
   let s1WptMap = null, s1WptMapTrackLayer = null, s1WptMapMarkers = [], s1WptMapOverlay = null, s1WptMapFitTarget = null;
+  let s1WptMapSearchMarker = null, s1WptMapSearchOverlay = null, s1WptMapSearchMarkerL = null;
   let s1WptMapL = null, s1WptMapLTrackLayer = null, s1WptMapLMarkerGroup = null, s1WptMapLMarkers = [], s1WptMapLFitTarget = null;
   let s1WptMapPendingBounds = null; // provider 전환 직전 화면 범위 — 전환 후에도 같은 화면을 유지하기 위함(트랙 전체 fit 방지)
 
@@ -3423,7 +3634,7 @@ function tunnelWaypointLabel(name) {
       Math.hypot(s1WptMapHoverX - clickPx.x, s1WptMapHoverY - clickPx.y) <= WPT_CREATE_CLICK_PX;
     const idx = useHover ? s1WptMapHoverIdx : s1NearestIdx(s1Points, lat, lng);
     const p = s1Points[idx];
-    if (clickPx && !s1IsClickNearTrack(p, clickPx)) return; // 코스 선에서 너무 먼 곳 클릭이면 무시
+    if (clickPx && !s1IsClickNearTrack(idx, clickPx)) return; // 코스 선에서 너무 먼 곳 클릭이면 무시
     if (hasCoordCollision(p.lat, p.lon)) return; // 이미 그 자리에 웨이포인트가 있음
 
     if (wptMapProvider === 'osm') {
@@ -3449,19 +3660,28 @@ function tunnelWaypointLabel(name) {
     }
   }
 
-  // 클릭 지점(화면 픽셀)이 실제로 트랙 위 점(p) 근처인지 — 지도 종류별로 픽셀 좌표 변환 방식이 달라서 분기
-  function s1IsClickNearTrack(p, clickPx) {
-    let trackPx = null;
-    if (wptMapProvider === 'osm') {
-      if (!s1WptMapL) return true; // 지도가 아직 없으면 판단 불가 — 막지 않음
-      trackPx = s1WptMapL.latLngToContainerPoint([p.lat, p.lon]);
-    } else {
-      if (!s1WptMap) return true;
-      trackPx = s1WptMap.getProjection().containerPointFromCoords(new kakao.maps.LatLng(p.lat, p.lon));
+  // 클릭 지점(화면 픽셀)이 실제로 트랙 "선" 근처인지 — 점 하나가 아니라 idx 앞뒤 이웃 점들이 이루는 선분들까지 검사
+  // (GPS 점 간격이 넓은 구간에서는 점과 점 사이 선 위를 클릭해도 양쪽 점 모두에서 멀 수 있어서, 점만 보면 "선에서는 안 찍히는" 문제가 생김)
+  function s1IsClickNearTrack(idx, clickPx) {
+    const toPx = pt => {
+      if (wptMapProvider === 'osm') {
+        if (!s1WptMapL) return null;
+        return s1WptMapL.latLngToContainerPoint([pt.lat, pt.lon]);
+      }
+      if (!s1WptMap) return null;
+      return s1WptMap.getProjection().containerPointFromCoords(new kakao.maps.LatLng(pt.lat, pt.lon));
+    };
+    const NEIGHBOR = 5;
+    const lo = Math.max(0, idx - NEIGHBOR), hi = Math.min(s1Points.length - 1, idx + NEIGHBOR);
+    let best = Infinity, prevPx = null;
+    for (let i = lo; i <= hi; i++) {
+      const px = toPx(s1Points[i]);
+      if (!px) return true; // 지도가 아직 없으면 판단 불가 — 막지 않음
+      if (prevPx) best = Math.min(best, pointToSegmentDistancePx(clickPx.x, clickPx.y, prevPx.x, prevPx.y, px.x, px.y));
+      else best = Math.min(best, Math.hypot(px.x - clickPx.x, px.y - clickPx.y));
+      prevPx = px;
     }
-    if (!trackPx) return true;
-    const dx = trackPx.x - clickPx.x, dy = trackPx.y - clickPx.y;
-    return Math.sqrt(dx * dx + dy * dy) <= WPT_CREATE_CLICK_PX;
+    return best <= WPT_CREATE_CLICK_PX;
   }
   // ── 트랙 위에 마우스 올리면 거리·해발고도 툴팁 ──
   let s1WptMapTooltipEl = null;
@@ -3752,6 +3972,7 @@ function tunnelWaypointLabel(name) {
     s1WptMapL = null; s1WptMapLTrackLayer = null; s1WptMapLMarkerGroup = null; s1WptMapLMarkers = []; s1WptMapLFitTarget = null;
     s1WptMapTooltipEl = null; // 컨테이너를 비우므로 다음 렌더링 때 새로 생성됨
     s1WptMapLocateMarker = null;
+    s1WptMapSearchMarker = null; s1WptMapSearchOverlay = null; s1WptMapSearchMarkerL = null;
     s1WptMapArrowMarkers = []; s1WptMapLArrowLayer = null;
     const el = document.getElementById('s1WptMap');
     if (el) el.innerHTML = '';
@@ -3841,23 +4062,79 @@ function tunnelWaypointLabel(name) {
   document.getElementById('s1WptMapLocateBtn').addEventListener('click', s1WptMapLocateMe);
 
   // ── 카카오맵 장소 검색 ──
+  function s1WptMapClearSearchMarker() {
+    if (s1WptMapSearchMarker) { s1WptMapSearchMarker.setMap(null); s1WptMapSearchMarker = null; }
+    if (s1WptMapSearchOverlay) { s1WptMapSearchOverlay.setMap(null); s1WptMapSearchOverlay = null; }
+    if (s1WptMapSearchMarkerL && s1WptMapL) { s1WptMapL.removeLayer(s1WptMapSearchMarkerL); }
+    s1WptMapSearchMarkerL = null;
+  }
+  function s1WptMapSearchLabelEl(name) {
+    const box = document.createElement('div');
+    box.className = 'wpt-popup-box wpt-search-label';
+    box.innerHTML = `<span>${escapeHtml(name)}</span><button type="button" class="wpt-search-label-close">×</button>`;
+    box.querySelector('.wpt-search-label-close').addEventListener('click', s1WptMapClearSearchMarker);
+    return box;
+  }
+  function s1WptMapSearchBoundsForApi() {
+    if (!document.getElementById('s1WptMapSearchBoundsChk').checked) return null;
+    if (wptMapProvider === 'osm') {
+      if (!s1WptMapL) return null;
+      const b = s1WptMapL.getBounds();
+      return new kakao.maps.LatLngBounds(new kakao.maps.LatLng(b.getSouth(), b.getWest()), new kakao.maps.LatLng(b.getNorth(), b.getEast()));
+    }
+    if (!s1WptMap) return null;
+    return s1WptMap.getBounds();
+  }
+  function s1WptMapGoToPlace(place) {
+    s1WptMapClearSearchMarker();
+    document.getElementById('s1WptMapSearchResults').style.display = 'none';
+    const lat = parseFloat(place.y), lng = parseFloat(place.x);
+    if (wptMapProvider === 'osm') {
+      if (!s1WptMapL) return;
+      s1WptMapL.setView([lat, lng], 16);
+      const marker = L.marker([lat, lng]).addTo(s1WptMapL);
+      marker.bindPopup(() => s1WptMapSearchLabelEl(place.place_name), { closeButton: false }).openPopup();
+      marker.on('popupclose', () => { if (s1WptMapSearchMarkerL === marker) s1WptMapClearSearchMarker(); });
+      s1WptMapSearchMarkerL = marker;
+    } else {
+      if (!s1WptMap) return;
+      const pos = new kakao.maps.LatLng(lat, lng);
+      s1WptMap.setCenter(pos);
+      s1WptMap.setLevel(4);
+      const marker = new kakao.maps.Marker({ position: pos });
+      marker.setMap(s1WptMap);
+      const overlay = new kakao.maps.CustomOverlay({ position: pos, content: s1WptMapSearchLabelEl(place.place_name), yAnchor: 1.4, zIndex: 6 });
+      overlay.setMap(s1WptMap);
+      s1WptMapSearchMarker = marker;
+      s1WptMapSearchOverlay = overlay;
+    }
+  }
+  function s1WptMapShowSearchResults(results) {
+    const listEl = document.getElementById('s1WptMapSearchResults');
+    listEl.innerHTML = '';
+    results.forEach(place => {
+      const item = document.createElement('div');
+      item.className = 'wpt-map-search-result';
+      item.innerHTML = `<span class="name">${escapeHtml(place.place_name)}</span><span class="addr">${escapeHtml(place.road_address_name || place.address_name || '')}</span>`;
+      item.addEventListener('click', () => s1WptMapGoToPlace(place));
+      listEl.appendChild(item);
+    });
+    listEl.style.display = 'block';
+  }
   function s1WptMapSearch() {
     const q = document.getElementById('s1WptMapSearchInput').value.trim();
     if (!q) return;
-    kakaoPlacesSearch(q, place => {
-      const lat = parseFloat(place.y), lng = parseFloat(place.x);
-      if (wptMapProvider === 'osm') {
-        if (!s1WptMapL) return;
-        s1WptMapL.setView([lat, lng], 16);
-      } else {
-        if (!s1WptMap) return;
-        s1WptMap.setCenter(new kakao.maps.LatLng(lat, lng));
-        s1WptMap.setLevel(4);
-      }
-    }, () => showSError(t('mapSearchNoResult')));
+    const opts = {};
+    const bounds = s1WptMapSearchBoundsForApi();
+    if (bounds) opts.bounds = bounds;
+    kakaoPlacesSearch(q, opts, s1WptMapShowSearchResults, () => showSError(t('mapSearchNoResult')));
   }
   document.getElementById('s1WptMapSearchBtn').addEventListener('click', s1WptMapSearch);
   document.getElementById('s1WptMapSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') s1WptMapSearch(); });
+  document.addEventListener('click', e => {
+    if (e.target.closest('#s1WptMapSearchResults, #s1WptMapSearchInput, #s1WptMapSearchBtn')) return;
+    document.getElementById('s1WptMapSearchResults').style.display = 'none';
+  });
 
   // ── 지도 전체화면 (Fullscreen API) ──
   function s1WptMapToggleFullscreen() {
@@ -3893,6 +4170,7 @@ function tunnelWaypointLabel(name) {
     s1WptUndoStack = []; s1WptRedoStack = []; updateS1WptUndoRedoUI();
     s1EditingWptIdx = null; s1Corrected = false; s1EasterEgg = false;
     s1SelectedWpt = new Set(); s1WptSaveBar.style.display = 'none';
+    s1SplitCuts = []; s1RenderSplitPanel();
     hideSError();
     sFileInput.value = '';
     sFileBadge.style.display = 'none';
@@ -3998,6 +4276,7 @@ function goHome() {
   restoredGpxText = '';
   editingWptIdx = null;
   selectedWpt = new Set(); wptSaveBar.style.display = 'none';
+  splitCutsT2 = []; renderSplitPanelT2();
   easterEggMode = false;
   courseNameInput.value = '';
   paramInput.value = '';
@@ -4084,6 +4363,91 @@ document.getElementById('btnTcx').addEventListener('click', () => {
   download(buildTcx(name), exportName(name) + '.tcx', 'application/vnd.garmin.tcx+xml');
 });
 
+// ── 코스 분할: 선택한 웨이포인트 위치에서 코스를 나눠 구간별 GPX/TCX 저장 ──
+// 분할 지점은 앞 구간의 끝이자 뒤 구간의 시작 — 그 지점의 웨이포인트는 양쪽 파일에 다 들어감.
+// 라이딩가즈아 구간/포인트 번호(sectionIndex/pointIndex)는 각 파일 기준 0부터 다시 매기고,
+// 원래 고도 백업값(originalElevation)은 그대로 둬서 나중에 다시 ② 탭으로 복원할 수 있게 함
+const splitPanel = document.getElementById('splitPanel');
+let splitCutsT2 = [];
+
+function splitPartDataT2(k) {
+  const bounds = [0, ...splitCutsT2, points.length - 1];
+  const start = bounds[k], end = bounds[k + 1];
+  const src = points.slice(start, end + 1);
+  const secOrder = [], secMin = {};
+  for (const p of src) {
+    if (!(p.secIdx in secMin)) { secOrder.push(p.secIdx); secMin[p.secIdx] = Infinity; }
+    if (p.ptIdx !== undefined) secMin[p.secIdx] = Math.min(secMin[p.secIdx], parseInt(p.ptIdx));
+  }
+  const pts = src.map(p => {
+    const secIdx = String(secOrder.indexOf(p.secIdx));
+    const ptIdx = p.ptIdx === undefined ? undefined : String(parseInt(p.ptIdx) - secMin[p.secIdx]);
+    let attrStr = p.attrStr.replace(/sectionIndex="[^"]*"/, 'sectionIndex="' + secIdx + '"');
+    if (ptIdx !== undefined) attrStr = attrStr.replace(/pointIndex="[^"]*"/, 'pointIndex="' + ptIdx + '"');
+    return { ...p, secIdx, ptIdx, attrStr };
+  });
+  const base = cumDist[start];
+  const cum = cumDist.slice(start, end + 1).map(d => d - base);
+  const wpts = waypoints
+    .filter(w => w.arrIdx >= start && w.arrIdx <= end)
+    .map(w => {
+      const tp = pts[w.arrIdx - start];
+      return { ...w, arrIdx: w.arrIdx - start, secIdx: tp.secIdx, ptIdx: tp.ptIdx };
+    });
+  return { start, end, pts, cum, wpts };
+}
+
+function renderSplitPanelT2() {
+  if (!splitCutsT2.length) { splitPanel.style.display = 'none'; splitPanel.innerHTML = ''; return; }
+  const baseName = (courseNameInput.value || origBase).trim() || origBase;
+  const parts = splitCutsT2.length + 1;
+  const bounds = [0, ...splitCutsT2, points.length - 1];
+  let html = `<div class="wpt-split-head"><b>${escapeHtml(t('splitTitle').replace('{n}', parts))}</b><button type="button" class="wpt-split-close" title="닫기">✕</button></div>`;
+  for (let k = 0; k < parts; k++) {
+    const start = bounds[k], end = bounds[k + 1];
+    const wCount = waypoints.filter(w => w.arrIdx >= start && w.arrIdx <= end).length;
+    const info = t('splitInfo')
+      .replace('{from}', fmtNum(cumDist[start] / 1000, 1))
+      .replace('{to}', fmtNum(cumDist[end] / 1000, 1))
+      .replace('{w}', wCount);
+    html += `<div class="wpt-split-row" data-k="${k}">
+      <input type="text" class="wpt-split-name" value="${escapeAttr(baseName + '_' + (k + 1))}" autocomplete="off" spellcheck="false">
+      <span class="wpt-split-info">${escapeHtml(info)}</span>
+      <button type="button" class="wpt-split-dl" data-format="gpx">GPX</button>
+      <button type="button" class="wpt-split-dl" data-format="tcx">TCX</button>
+    </div>`;
+  }
+  splitPanel.innerHTML = html;
+  splitPanel.style.display = 'block';
+}
+
+document.getElementById('wptSplitBtn').addEventListener('click', () => {
+  const last = points.length - 1;
+  const cuts = [...new Set(Array.from(selectedWpt).map(i => waypoints[i] && waypoints[i].arrIdx))]
+    .filter(idx => idx !== undefined && idx > 0 && idx < last)
+    .sort((a, b) => a - b);
+  if (!cuts.length) { showError(t('splitErrNone')); return; }
+  hideError();
+  splitCutsT2 = cuts;
+  renderSplitPanelT2();
+  splitPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+});
+
+splitPanel.addEventListener('click', e => {
+  if (e.target.closest('.wpt-split-close')) { splitCutsT2 = []; renderSplitPanelT2(); return; }
+  const btn = e.target.closest('.wpt-split-dl');
+  if (!btn) return;
+  const row = btn.closest('.wpt-split-row');
+  const k = parseInt(row.dataset.k);
+  const name = row.querySelector('.wpt-split-name').value.trim() || (origBase + '_' + (k + 1));
+  const d = splitPartDataT2(k);
+  if (btn.dataset.format === 'tcx') download(buildTcx(name, d.pts, d.wpts, d.cum), exportName(name) + '.tcx', 'application/vnd.garmin.tcx+xml');
+  else download(buildGpx(name, d.pts, d.wpts), exportName(name) + '.gpx', 'application/gpx+xml');
+});
+splitPanel.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.closest('.wpt-split-name')) e.preventDefault();
+});
+
 document.getElementById('btnCsv').addEventListener('click', () => {
   if (!waypoints.length) return;
   const name = (courseNameInput.value || origBase).trim() || origBase;
@@ -4149,6 +4513,7 @@ function process(text, fname, format) {
   restoredGpxText = '';
   editingWptIdx = null;
   selectedWpt = new Set();
+  splitCutsT2 = []; renderSplitPanelT2();
 
   const { restoredCount, osmCount, mismatches } =
     format === 'tcx' ? parseTcxInput(text) : parseGpxInput(text);
@@ -4888,6 +5253,7 @@ let wptMapProvider = (function () { try { return localStorage.getItem('wptMapPro
 
 // 카카오맵 상태
 let wptMap = null, wptMapTrackLayer = null, wptMapMarkers = [], wptMapOverlay = null, wptMapFitTarget = null;
+let wptMapSearchMarker = null, wptMapSearchOverlay = null, wptMapSearchMarkerL = null;
 let wptMapPendingBounds = null; // provider 전환 직전 화면 범위 — 전환 후에도 같은 화면을 유지하기 위함(트랙 전체 fit 방지)
 // OSM(Leaflet) 상태
 let wptMapL = null, wptMapLTrackLayer = null, wptMapLMarkerGroup = null, wptMapLMarkers = [], wptMapLFitTarget = null;
@@ -5068,7 +5434,7 @@ function handleWptMapCreate(lat, lng, clickPx) {
     Math.hypot(wptMapHoverX - clickPx.x, wptMapHoverY - clickPx.y) <= WPT_CREATE_CLICK_PX;
   const idx = useHover ? wptMapHoverIdx : nearestIdx(lat, lng);
   const p = points[idx];
-  if (clickPx && !isClickNearTrack(p, clickPx)) return; // 코스 선에서 너무 먼 곳 클릭이면 무시
+  if (clickPx && !isClickNearTrack(idx, clickPx)) return; // 코스 선에서 너무 먼 곳 클릭이면 무시
   if (hasCoordCollisionT2(p.lat, p.lon)) return; // 이미 그 자리에 웨이포인트가 있음
 
   if (wptMapProvider === 'osm') {
@@ -5096,19 +5462,28 @@ function handleWptMapCreate(lat, lng, clickPx) {
   }
 }
 
-// 클릭 지점(화면 픽셀)이 실제로 트랙 위 점(p) 근처인지 — 지도 종류별로 픽셀 좌표 변환 방식이 달라서 분기
-function isClickNearTrack(p, clickPx) {
-  let trackPx = null;
-  if (wptMapProvider === 'osm') {
-    if (!wptMapL) return true; // 지도가 아직 없으면 판단 불가 — 막지 않음
-    trackPx = wptMapL.latLngToContainerPoint([p.lat, p.lon]);
-  } else {
-    if (!wptMap) return true;
-    trackPx = wptMap.getProjection().containerPointFromCoords(new kakao.maps.LatLng(p.lat, p.lon));
+// 클릭 지점(화면 픽셀)이 실제로 트랙 "선" 근처인지 — 점 하나가 아니라 idx 앞뒤 이웃 점들이 이루는 선분들까지 검사
+// (GPS 점 간격이 넓은 구간에서는 점과 점 사이 선 위를 클릭해도 양쪽 점 모두에서 멀 수 있어서, 점만 보면 "선에서는 안 찍히는" 문제가 생김)
+function isClickNearTrack(idx, clickPx) {
+  const toPx = pt => {
+    if (wptMapProvider === 'osm') {
+      if (!wptMapL) return null;
+      return wptMapL.latLngToContainerPoint([pt.lat, pt.lon]);
+    }
+    if (!wptMap) return null;
+    return wptMap.getProjection().containerPointFromCoords(new kakao.maps.LatLng(pt.lat, pt.lon));
+  };
+  const NEIGHBOR = 5;
+  const lo = Math.max(0, idx - NEIGHBOR), hi = Math.min(points.length - 1, idx + NEIGHBOR);
+  let best = Infinity, prevPx = null;
+  for (let i = lo; i <= hi; i++) {
+    const px = toPx(points[i]);
+    if (!px) return true; // 지도가 아직 없으면 판단 불가 — 막지 않음
+    if (prevPx) best = Math.min(best, pointToSegmentDistancePx(clickPx.x, clickPx.y, prevPx.x, prevPx.y, px.x, px.y));
+    else best = Math.min(best, Math.hypot(px.x - clickPx.x, px.y - clickPx.y));
+    prevPx = px;
   }
-  if (!trackPx) return true;
-  const dx = trackPx.x - clickPx.x, dy = trackPx.y - clickPx.y;
-  return Math.sqrt(dx * dx + dy * dy) <= WPT_CREATE_CLICK_PX;
+  return best <= WPT_CREATE_CLICK_PX;
 }
 // ── 트랙 위에 마우스 올리면 거리·해발고도 툴팁 ──
 let wptMapTooltipEl = null;
@@ -5400,6 +5775,7 @@ function wptMapTeardown() {
   wptMapL = null; wptMapLTrackLayer = null; wptMapLMarkerGroup = null; wptMapLMarkers = []; wptMapLFitTarget = null; wptMapLArrowLayer = null;
   wptMapTooltipEl = null; // 컨테이너를 비우므로 다음 렌더링 때 새로 생성됨
   wptMapLocateMarker = null;
+  wptMapSearchMarker = null; wptMapSearchOverlay = null; wptMapSearchMarkerL = null;
   const el = document.getElementById('wptMap');
   if (el) el.innerHTML = '';
 }
@@ -5487,23 +5863,79 @@ document.getElementById('wptMapFitBtn').addEventListener('click', wptMapFitToBou
 document.getElementById('wptMapLocateBtn').addEventListener('click', wptMapLocateMe);
 
 // ── 카카오맵 장소 검색 ──
+function wptMapClearSearchMarker() {
+  if (wptMapSearchMarker) { wptMapSearchMarker.setMap(null); wptMapSearchMarker = null; }
+  if (wptMapSearchOverlay) { wptMapSearchOverlay.setMap(null); wptMapSearchOverlay = null; }
+  if (wptMapSearchMarkerL && wptMapL) { wptMapL.removeLayer(wptMapSearchMarkerL); }
+  wptMapSearchMarkerL = null;
+}
+function wptMapSearchLabelEl(name) {
+  const box = document.createElement('div');
+  box.className = 'wpt-popup-box wpt-search-label';
+  box.innerHTML = `<span>${escapeHtml(name)}</span><button type="button" class="wpt-search-label-close">×</button>`;
+  box.querySelector('.wpt-search-label-close').addEventListener('click', wptMapClearSearchMarker);
+  return box;
+}
+function wptMapSearchBoundsForApi() {
+  if (!document.getElementById('wptMapSearchBoundsChk').checked) return null;
+  if (wptMapProvider === 'osm') {
+    if (!wptMapL) return null;
+    const b = wptMapL.getBounds();
+    return new kakao.maps.LatLngBounds(new kakao.maps.LatLng(b.getSouth(), b.getWest()), new kakao.maps.LatLng(b.getNorth(), b.getEast()));
+  }
+  if (!wptMap) return null;
+  return wptMap.getBounds();
+}
+function wptMapGoToPlace(place) {
+  wptMapClearSearchMarker();
+  document.getElementById('wptMapSearchResults').style.display = 'none';
+  const lat = parseFloat(place.y), lng = parseFloat(place.x);
+  if (wptMapProvider === 'osm') {
+    if (!wptMapL) return;
+    wptMapL.setView([lat, lng], 16);
+    const marker = L.marker([lat, lng]).addTo(wptMapL);
+    marker.bindPopup(() => wptMapSearchLabelEl(place.place_name), { closeButton: false }).openPopup();
+    marker.on('popupclose', () => { if (wptMapSearchMarkerL === marker) wptMapClearSearchMarker(); });
+    wptMapSearchMarkerL = marker;
+  } else {
+    if (!wptMap) return;
+    const pos = new kakao.maps.LatLng(lat, lng);
+    wptMap.setCenter(pos);
+    wptMap.setLevel(4);
+    const marker = new kakao.maps.Marker({ position: pos });
+    marker.setMap(wptMap);
+    const overlay = new kakao.maps.CustomOverlay({ position: pos, content: wptMapSearchLabelEl(place.place_name), yAnchor: 1.4, zIndex: 6 });
+    overlay.setMap(wptMap);
+    wptMapSearchMarker = marker;
+    wptMapSearchOverlay = overlay;
+  }
+}
+function wptMapShowSearchResults(results) {
+  const listEl = document.getElementById('wptMapSearchResults');
+  listEl.innerHTML = '';
+  results.forEach(place => {
+    const item = document.createElement('div');
+    item.className = 'wpt-map-search-result';
+    item.innerHTML = `<span class="name">${escapeHtml(place.place_name)}</span><span class="addr">${escapeHtml(place.road_address_name || place.address_name || '')}</span>`;
+    item.addEventListener('click', () => wptMapGoToPlace(place));
+    listEl.appendChild(item);
+  });
+  listEl.style.display = 'block';
+}
 function wptMapSearch() {
   const q = document.getElementById('wptMapSearchInput').value.trim();
   if (!q) return;
-  kakaoPlacesSearch(q, place => {
-    const lat = parseFloat(place.y), lng = parseFloat(place.x);
-    if (wptMapProvider === 'osm') {
-      if (!wptMapL) return;
-      wptMapL.setView([lat, lng], 16);
-    } else {
-      if (!wptMap) return;
-      wptMap.setCenter(new kakao.maps.LatLng(lat, lng));
-      wptMap.setLevel(4);
-    }
-  }, () => showError(t('mapSearchNoResult')));
+  const opts = {};
+  const bounds = wptMapSearchBoundsForApi();
+  if (bounds) opts.bounds = bounds;
+  kakaoPlacesSearch(q, opts, wptMapShowSearchResults, () => showError(t('mapSearchNoResult')));
 }
 document.getElementById('wptMapSearchBtn').addEventListener('click', wptMapSearch);
 document.getElementById('wptMapSearchInput').addEventListener('keydown', e => { if (e.key === 'Enter') wptMapSearch(); });
+document.addEventListener('click', e => {
+  if (e.target.closest('#wptMapSearchResults, #wptMapSearchInput, #wptMapSearchBtn')) return;
+  document.getElementById('wptMapSearchResults').style.display = 'none';
+});
 
 // ── 지도 전체화면 (Fullscreen API) ──
 function wptMapToggleFullscreen() {
@@ -5644,18 +6076,19 @@ function buildWptXml(w) {
 // ═══════════════════════════════════════════════════════
 //  GPX 생성 (TCX 입력 → GPX 출력용, 2.gpx 구조 재현)
 // ═══════════════════════════════════════════════════════
-function buildGpx(name) {
+// pts/wpts/cum을 넘기면 그 구간만 조립 (코스 분할용). wpts의 arrIdx와 cum은 pts 기준(0부터)이어야 함
+function buildGpx(name, pts = points, wpts = waypoints) {
   const esc = escapeHtml(name);
   let out = '<?xml version="1.0" encoding="UTF-8"?>\n';
   out += '<gpx xmlns="http://www.topografix.com/GPX/1/1" creator="MTK - http://www.toursprung.com" version="1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">\n';
   out += '<metadata>\n<name>' + esc + '</name>\n<extensions><extra>{}</extra></extensions>\n</metadata>\n';
 
-  for (const w of waypoints) {
+  for (const w of wpts) {
     out += buildWptXml(w) + '\n';
   }
 
   out += '<trk>\n<name>' + esc + '</name>\n<trkseg>\n';
-  for (const p of points) {
+  for (const p of pts) {
     out += '<trkpt lat="' + p.latStr + '" lon="' + p.lonStr + '"' + p.attrStr + '>'
         + '<ele>' + p.eleStr + '</ele>'
         + '</trkpt>\n';
@@ -5669,11 +6102,11 @@ function buildGpx(name) {
 // ═══════════════════════════════════════════════════════
 const isoNoMs = ms => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
 
-function buildTcx(name) {
+function buildTcx(name, pts = points, wpts = waypoints, cum = cumDist) {
   const startMs = Date.now();
-  const totalDist = cumDist[cumDist.length - 1];
+  const totalDist = cum[cum.length - 1];
   const totalSecs = Math.round(totalDist / VIRTUAL_SPEED);
-  const first = points[0], last = points[points.length - 1];
+  const first = pts[0], last = pts[pts.length - 1];
 
   let out = '<?xml version="1.0" encoding="utf-8" standalone="no"?>\n';
   out += '<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2 http://www.garmin.com/xmlschemas/TrainingCenterDatabasev2.xsd">\n';
@@ -5687,21 +6120,21 @@ function buildTcx(name) {
   out += '<Intensity>Active</Intensity>\n</Lap>\n<Track>\n';
 
   const times = [];
-  for (let i = 0; i < points.length; i++) {
-    const p = points[i];
-    const tms = startMs + Math.round(cumDist[i] / VIRTUAL_SPEED) * 1000;
+  for (let i = 0; i < pts.length; i++) {
+    const p = pts[i];
+    const tms = startMs + Math.round(cum[i] / VIRTUAL_SPEED) * 1000;
     times.push(tms);
     const tcxAttrs = p.attrStr.replace(/\s+(?:lat|lon)="[^"]*"/g, '');
     out += '<Trackpoint' + tcxAttrs + '>'
         + '<Time>' + isoNoMs(tms) + '</Time>'
         + '<Position><LatitudeDegrees>' + p.latStr + '</LatitudeDegrees><LongitudeDegrees>' + p.lonStr + '</LongitudeDegrees></Position>'
         + '<AltitudeMeters>' + p.eleStr + '</AltitudeMeters>'
-        + '<DistanceMeters>' + cumDist[i].toFixed(2) + '</DistanceMeters>'
+        + '<DistanceMeters>' + cum[i].toFixed(2) + '</DistanceMeters>'
         + '</Trackpoint>\n';
   }
   out += '</Track>\n';
 
-  for (const w of waypoints) {
+  for (const w of wpts) {
     out += '<CoursePoint sectionIndex="' + w.secIdx + '" pointIndex="' + (w.ptIdx !== undefined ? w.ptIdx : w.arrIdx) + '">'
         + '<Name>' + w.nameRaw + '</Name>'
         + '<Time>' + isoNoMs(times[w.arrIdx]) + '</Time>'
