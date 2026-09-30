@@ -509,87 +509,6 @@
   .export-btn small { font-weight:500; font-size:.72rem; color:#9dc8e8; display:block; }
   .export-btn .txt  { text-align:left; }
 
-  /* ── Threshold ── */
-  #controlBar {
-    display:none;
-    flex-direction:column;
-    gap:10px;
-    margin-bottom:20px;
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:12px 16px;
-    font-size:.82rem;
-  }
-  .ctrl-row { display:flex; align-items:center; gap:10px; }
-  #controlBar label { color:var(--dim); white-space:nowrap; }
-  #threshold { flex:1; accent-color:var(--accent); cursor:pointer; }
-  #threshVal { font-weight:700; color:var(--accent); min-width:38px; text-align:right; }
-  #refRow {
-    display:flex; gap:20px;
-    padding-top:8px;
-    border-top:1px solid var(--border);
-    font-size:.8rem; color:var(--dim);
-    flex-wrap:wrap;
-  }
-  #refRow span b { color:var(--text); font-weight:700; }
-  .help-tip { color:var(--dim); font-size:.78rem; line-height:1.45; }
-  #refNote { color:var(--accent); font-size:.78rem; }
-
-  .info-btn {
-    flex-shrink:0;
-    width:20px; height:20px;
-    border-radius:50%;
-    border:1px solid var(--dim);
-    background:none;
-    color:var(--dim);
-    font-size:.72rem;
-    line-height:1;
-    display:flex; align-items:center; justify-content:center;
-    cursor:pointer;
-    padding:0;
-    transition:border-color .15s, color .15s;
-  }
-  .info-btn:hover, .info-btn:active { border-color:var(--accent); color:var(--accent); }
-
-  #infoBackdrop {
-    display:none;
-    position:fixed; inset:0;
-    background:rgba(0,0,0,.6);
-    z-index:100;
-    align-items:center;
-    justify-content:center;
-    padding:24px;
-  }
-  #infoBackdrop.open { display:flex; }
-  #infoPopup {
-    background:var(--card);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:20px;
-    max-width:380px;
-    width:100%;
-  }
-  #infoPopup p {
-    font-size:.87rem;
-    line-height:1.6;
-    color:var(--text);
-    margin-bottom:16px;
-  }
-  #infoPopup button {
-    width:100%;
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:8px;
-    color:var(--accent);
-    font-weight:700;
-    font-size:.87rem;
-    padding:10px;
-    cursor:pointer;
-    font-family:inherit;
-  }
-  #infoPopup button:hover { filter:brightness(1.3); }
-
   /* ── Stats ── */
   #statsGrid {
     display:none;
@@ -1114,20 +1033,6 @@
     margin-bottom:18px;
   }
 
-  #s1ControlBar {
-    display:none;
-    align-items:center;
-    gap:10px;
-    margin-bottom:18px;
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:12px 16px;
-    font-size:.82rem;
-  }
-  #s1ControlBar label { color:var(--dim); white-space:nowrap; }
-  #s1ControlBar input[type="range"] { flex:1; }
-  #s1ControlBar span { color:var(--text); font-weight:700; white-space:nowrap; }
 
   #s1DownloadBar { display:none; gap:12px; margin-bottom:20px; }
 
@@ -1284,7 +1189,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.34</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.35</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1423,13 +1328,6 @@
   <div id="s1SplitPanel" class="wpt-split-panel"></div>
   <div id="s1WptWrap">
     <div id="s1WptList"></div>
-  </div>
-
-  <!-- 노이즈 필터 -->
-  <div id="s1ControlBar">
-    <label for="s1Thresh" data-i18n="noiseLabel">노이즈 필터 (참고용)</label>
-    <input type="range" id="s1Thresh" min="0" max="15" step="1" value="0">
-    <span id="s1ThreshVal">0 m</span>
   </div>
 
   <!-- 고도 프로파일 차트 -->
@@ -1629,30 +1527,6 @@
   </div>
 </div>
 
-<!-- Threshold -->
-<div id="controlBar">
-  <div class="ctrl-row">
-    <label data-i18n="noiseLabel">노이즈 필터 (참고용)</label>
-    <input type="range" id="threshold" min="0" max="30" value="0" step="1">
-    <span id="threshVal">0 m</span>
-    <button type="button" class="info-btn" id="threshInfoBtn" aria-label="설명 보기">ⓘ</button>
-  </div>
-  <p class="help-tip" data-i18n="helpTip">아래 수치는 위 원본값과 비교용입니다. 실제 앱(가민, Strava 등)과 견줄 때 슬라이더를 조절해 참고하세요.</p>
-  <div id="refRow">
-    <span><span data-i18n="refGain">획득 고도</span>: <b id="refGain">—</b></span>
-    <span><span data-i18n="refLoss">획득 내리막</span>: <b id="refLoss">—</b></span>
-    <span id="refNote" style="display:none;" data-i18n="refNote">← 필터 0 = GPX 파일 자체의 획득 고도</span>
-  </div>
-</div>
-
-<!-- 노이즈 필터 설명 팝업 -->
-<div id="infoBackdrop">
-  <div id="infoPopup">
-    <p data-i18n="threshInfoText">슬라이더 옆 숫자는 미터(m) 단위의 노이즈 필터 임계값입니다 — 오른쪽으로 밀수록 "이 값 미만의 오르내림은 무시"하는 기준이 커집니다. 위쪽 메인 카드(파일 원본값)는 바뀌지 않고, 바로 아래 참고용 획득 고도·내리막 숫자에만 반영됩니다. "0 m"는 필터 없음, 즉 파일 원본 그대로라는 뜻입니다.</p>
-    <button type="button" id="infoCloseBtn" data-i18n="infoClose">닫기</button>
-  </div>
-</div>
-
 <!-- Chart -->
 <div id="chartWrap">
   <h2 data-i18n="chartTitle">고도 프로파일 (복원된 원본 고도)</h2>
@@ -1663,7 +1537,7 @@
 
 </main>
 
-<footer id="footerText">v3.34 (2026.10.01) · Made by 오동도</footer>
+<footer id="footerText">v3.35 (2026.10.01) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1716,7 +1590,7 @@ const I18N = {
     wptSaveSelected:'선택 저장',
     wptSplitSelected:'선택 지점에서 분할',
     splitTitle:'코스 분할 ({n}구간)',
-    splitInfo:'{from} ~ {to} km · 웨이포인트 {w}개',
+    splitInfo:'{len} km ({from} ~ {to}) · 획득고도 {gain} m · 웨이포인트 {w}개',
     splitErrNone:'분할할 수 있는 웨이포인트가 없습니다. (코스 시작/끝 지점은 제외)',
     wptSaveCount:'{n}개 선택됨',
     wptSaving:'저장 중...',
@@ -1726,12 +1600,6 @@ const I18N = {
     csvName:'이름', csvSegDist:'구간거리(km)', csvCumDist:'누적거리(km)', csvEle:'고도(m)', csvSegGain:'구간획득고도(m)', csvSegLoss:'구간획득내리막(m)',
     statDist:'총 거리', statGain:'획득 고도 ↑', statLoss:'획득 내리막 ↓',
     statMax:'최고 고도', statMin:'최저 고도', rawBadge:'파일 원본값',
-    noiseLabel:'노이즈 필터 (참고용)',
-    helpTip:'아래 수치는 위 원본값과 비교용입니다. 실제 앱(가민, Strava 등)과 견줄 때 슬라이더를 조절해 참고하세요.',
-    refGain:'획득 고도', refLoss:'획득 내리막',
-    refNote:'← 필터 0 = GPX 파일 자체의 획득 고도',
-    threshInfoText:'슬라이더 옆 숫자는 미터(m) 단위의 노이즈 필터 임계값입니다 — 오른쪽으로 밀수록 "이 값 미만의 오르내림은 무시"하는 기준이 커집니다. 위쪽 메인 카드(파일 원본값)는 바뀌지 않고, 바로 아래 참고용 획득 고도·내리막 숫자에만 반영됩니다. "0 m"는 필터 없음, 즉 파일 원본 그대로라는 뜻입니다.',
-    infoClose:'닫기',
     ridingazuaLabel:'라이딩가즈아',
     authorName:'오동도',
     mapTitle:'지도',
@@ -1825,7 +1693,7 @@ const I18N = {
     wptSaveSelected:'Save Selected',
     wptSplitSelected:'Split at Selected',
     splitTitle:'Course split ({n} parts)',
-    splitInfo:'{from} ~ {to} km · {w} waypoints',
+    splitInfo:'{len} km ({from} ~ {to}) · Elev. gain {gain} m · {w} waypoints',
     splitErrNone:'No waypoint to split at. (Course start/end points are excluded)',
     wptSaveCount:'{n} selected',
     wptSaving:'Saving...',
@@ -1835,12 +1703,6 @@ const I18N = {
     csvName:'Name', csvSegDist:'Segment Dist (km)', csvCumDist:'Cumulative Dist (km)', csvEle:'Elevation (m)', csvSegGain:'Segment Gain (m)', csvSegLoss:'Segment Loss (m)',
     statDist:'Total Distance', statGain:'Elevation Gain ↑', statLoss:'Elevation Loss ↓',
     statMax:'Max Elevation', statMin:'Min Elevation', rawBadge:'raw file value',
-    noiseLabel:'Noise filter (reference)',
-    helpTip:'The values below are for comparison with the raw values above. Adjust the slider when comparing with apps like Garmin or Strava.',
-    refGain:'Gain', refLoss:'Loss',
-    refNote:'← Filter 0 = elevation gain of the GPX file itself',
-    threshInfoText:"The number next to the slider is the noise filter threshold, in meters — moving it right raises the bar for what counts as a real elevation change (smaller ups and downs are ignored). It doesn't affect the main cards above (raw file values), only the gain/loss reference numbers just below. \"0 m\" means no filtering — the file's raw values as-is.",
-    infoClose:'Close',
     ridingazuaLabel:'ridingazua',
     authorName:'Odongdo',
     mapTitle:'Map',
@@ -1934,7 +1796,7 @@ const I18N = {
     wptSaveSelected:'選択を保存',
     wptSplitSelected:'選択地点で分割',
     splitTitle:'コース分割 ({n}区間)',
-    splitInfo:'{from} ~ {to} km · ウェイポイント {w}個',
+    splitInfo:'{len} km ({from} ~ {to}) · 獲得標高 {gain} m · ウェイポイント {w}個',
     splitErrNone:'分割できるウェイポイントがありません。(コースの始点/終点は除外)',
     wptSaveCount:'{n}件選択中',
     wptSaving:'保存中...',
@@ -1944,12 +1806,6 @@ const I18N = {
     csvName:'名前', csvSegDist:'区間距離(km)', csvCumDist:'累積距離(km)', csvEle:'標高(m)', csvSegGain:'区間獲得標高(m)', csvSegLoss:'区間下降標高(m)',
     statDist:'総距離', statGain:'獲得標高 ↑', statLoss:'下降標高 ↓',
     statMax:'最高標高', statMin:'最低標高', rawBadge:'ファイル元値',
-    noiseLabel:'ノイズフィルター (参考用)',
-    helpTip:'下の数値は上の元値との比較用です。GarminやStravaなどのアプリと比較する際にスライダーで調整してください。',
-    refGain:'獲得標高', refLoss:'下降標高',
-    refNote:'← フィルター0 = GPXファイル自体の獲得標高',
-    threshInfoText:'スライダー横の数値は、ノイズフィルターの閾値をメートル(m)単位で示したものです — 右に動かすほど「この値未満の上下は無視する」基準が大きくなります。上部のメインカード(ファイル元値)は変わらず、すぐ下の参考用の獲得標高・下降標高の数値にのみ反映されます。「0 m」はフィルターなし、つまりファイルの元の値のままという意味です。',
-    infoClose:'閉じる',
     ridingazuaLabel:'ridingazua',
     mapTitle:'地図',
     mapHint:'地図をクリックすると、最も近いトラック地点にウェイポイントが作成されます。マーカーをクリックすると名前・タイプの変更や削除ができます。',
@@ -2016,7 +1872,7 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.34';
+const APP_VERSION = 'v3.35';
 const APP_DATE = '2026.10.01';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
@@ -2119,7 +1975,6 @@ const paramInput     = document.getElementById('paramInput');
 const runBtn         = document.getElementById('runBtn');
 const restoreEl      = document.getElementById('restoreInfo');
 const exportBar      = document.getElementById('exportBar');
-const controlBar     = document.getElementById('controlBar');
 const statsGrid      = document.getElementById('statsGrid');
 const wptWrap        = document.getElementById('wptWrap');
 const wptMapWrap     = document.getElementById('wptMapWrap');
@@ -2133,8 +1988,6 @@ const wptSaveBtn     = document.getElementById('wptSaveBtn');
 const wptList        = document.getElementById('wptList');
 const chartWrap      = document.getElementById('chartWrap');
 const errorMsg       = document.getElementById('errorMsg');
-const threshSlid     = document.getElementById('threshold');
-const threshVal      = document.getElementById('threshVal');
 
 // ═══════════════════════════════════════════════════════
 //  탭 전환
@@ -2357,9 +2210,6 @@ function tunnelWaypointLabel(name) {
   const s1WptSaveCount = document.getElementById('s1WptSaveCount');
   const s1WptSaveBtn   = document.getElementById('s1WptSaveBtn');
   const s1StatsGrid    = document.getElementById('s1StatsGrid');
-  const s1ControlBar   = document.getElementById('s1ControlBar');
-  const s1Thresh       = document.getElementById('s1Thresh');
-  const s1ThreshVal    = document.getElementById('s1ThreshVal');
   const s1ChartWrap    = document.getElementById('s1ChartWrap');
   const s1ClimbBtn     = document.getElementById('s1ClimbBtn');
   const s1ClimbOverlay = document.getElementById('s1ClimbModalOverlay');
@@ -2661,13 +2511,6 @@ function tunnelWaypointLabel(name) {
     setTimeout(() => { if (s1SelectedWpt.size === 0) s1WptSaveBar.style.display = 'none'; }, 3500);
   }
 
-
-  // ── 노이즈 필터 ──
-  s1Thresh.addEventListener('input', () => {
-    const v = parseInt(s1Thresh.value);
-    s1ThreshVal.textContent = v + ' m';
-    s1RenderStats(v);
-  });
 
   // ── 차트 ──
   function s1DrawChart() {
@@ -3212,12 +3055,10 @@ function tunnelWaypointLabel(name) {
         // 보정 안 해도 매개변수(오동도짱)나 GPX/TCX 내보내기(웨이포인트만 편집해서 받기 등)를 바로 쓸 수 있게, 파일 불러오면 바로 표시
         sOptionsBar.style.display = 'flex';
         sDownloadBar.style.display = 'flex';
-        s1Thresh.value = 0; s1ThreshVal.textContent = '0 m';
         s1RenderStats(0);
         s1RenderWaypoints();
         s1WptHeadRow.style.display = 'flex';
         s1WptParamBar.style.display = 'flex';
-        s1ControlBar.style.display = 'flex';
 
         // 차트(가장 무거운 부분)는 한 번 더 양보한 뒤에
         setTimeout(() => {
@@ -3292,7 +3133,7 @@ function tunnelWaypointLabel(name) {
       sResultText.textContent = msg;
       sResult.style.display = 'block';
 
-      s1RenderStats(parseInt(s1Thresh.value) || 0);
+      s1RenderStats(0);
       s1RenderWaypoints();
       s1DrawChart();
       sOptionsBar.style.display = 'flex';
@@ -3350,9 +3191,12 @@ function tunnelWaypointLabel(name) {
     let html = `<div class="wpt-split-head"><b>${escapeHtml(t('splitTitle').replace('{n}', parts))}</b><button type="button" class="wpt-split-close" title="닫기">✕</button></div>`;
     for (let k = 0; k < parts; k++) {
       const d = s1SplitPartData(k);
+      const gain = Math.round(s1CalcStats(d.pts, 0).gain);
       const info = t('splitInfo')
         .replace('{from}', fmtNum(s1CumDist[d.start] / 1000, 1))
         .replace('{to}', fmtNum(s1CumDist[d.end] / 1000, 1))
+        .replace('{len}', fmtNum((s1CumDist[d.end] - s1CumDist[d.start]) / 1000, 1))
+        .replace('{gain}', fmtNum(gain))
         .replace('{w}', d.wpts.length);
       html += `<div class="wpt-split-row" data-k="${k}">
         <input type="text" class="wpt-split-name" value="${escapeAttr(baseName + '_' + (k + 1))}" autocomplete="off" spellcheck="false">
@@ -4178,7 +4022,6 @@ function tunnelWaypointLabel(name) {
     s1WptHeadRow.style.display = 'none';
     s1WptParamBar.style.display = 'none';
     s1WptWrap.style.display = 'none';
-    s1ControlBar.style.display = 'none';
     s1ChartWrap.style.display = 'none';
     sRunBtn.style.display = 'none';
     sProgress.style.display = 'none';
@@ -4187,7 +4030,6 @@ function tunnelWaypointLabel(name) {
     sDownloadBar.style.display = 'none';
     sCourseName.value = '';
     s1Param.value = '';
-    s1Thresh.value = 0; s1ThreshVal.textContent = '0 m';
     if (s1Chart) { s1Chart.destroy(); s1Chart = null; }
     s1RenderWptMap();
   };
@@ -4255,7 +4097,7 @@ runBtn.addEventListener('click', () => {
 
 function hideResults() {
   lastResult = null;
-  [restoreEl, exportBar, controlBar, statsGrid, wptMapWrap, wptWrap, wptHeadRow, wptParamBar, wptSaveBar, chartWrap, runBtn, courseNameBar]
+  [restoreEl, exportBar, statsGrid, wptMapWrap, wptWrap, wptHeadRow, wptParamBar, wptSaveBar, chartWrap, runBtn, courseNameBar]
     .forEach(el => el.style.display = 'none');
 }
 
@@ -4280,24 +4122,11 @@ function goHome() {
   easterEggMode = false;
   courseNameInput.value = '';
   paramInput.value = '';
-  threshSlid.value = 0;
-  threshVal.textContent = '0 m';
   if (chart) { chart.destroy(); chart = null; }
   if (window.s1Reset) window.s1Reset();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-threshSlid.addEventListener('input', () => {
-  const v = parseInt(threshSlid.value);
-  threshVal.textContent = v + ' m';
-  if (points.length) updateRef(v);
-});
-
-// ── 노이즈 필터 설명 팝업 ──
-const infoBackdrop = document.getElementById('infoBackdrop');
-document.getElementById('threshInfoBtn').addEventListener('click', () => infoBackdrop.classList.add('open'));
-document.getElementById('infoCloseBtn').addEventListener('click', () => infoBackdrop.classList.remove('open'));
-infoBackdrop.addEventListener('click', e => { if (e.target === infoBackdrop) infoBackdrop.classList.remove('open'); });
 
 // ── 웨이포인트 실행취소/다시실행 (Ctrl+Z / Ctrl+Y) ──
 function wptSnapshot() {
@@ -4406,9 +4235,12 @@ function renderSplitPanelT2() {
   for (let k = 0; k < parts; k++) {
     const start = bounds[k], end = bounds[k + 1];
     const wCount = waypoints.filter(w => w.arrIdx >= start && w.arrIdx <= end).length;
+    const gain = Math.round(calcStats(0, points.slice(start, end + 1)).gain); // 위 획득고도 카드(파일 원본값)와 같은 기준
     const info = t('splitInfo')
       .replace('{from}', fmtNum(cumDist[start] / 1000, 1))
       .replace('{to}', fmtNum(cumDist[end] / 1000, 1))
+      .replace('{len}', fmtNum((cumDist[end] - cumDist[start]) / 1000, 1))
+      .replace('{gain}', fmtNum(gain))
       .replace('{w}', wCount);
     html += `<div class="wpt-split-row" data-k="${k}">
       <input type="text" class="wpt-split-name" value="${escapeAttr(baseName + '_' + (k + 1))}" autocomplete="off" spellcheck="false">
@@ -4536,13 +4368,11 @@ function process(text, fname, format) {
   renderRestoreInfo();
   courseNameBar.style.display = 'flex';
   exportBar.style.display = 'flex';
-  controlBar.style.display = 'flex';
   wptHeadRow.style.display = 'flex';
   wptParamBar.style.display = 'flex';
   renderStats(s);
   renderWaypoints();
   drawChart();
-  updateRef(parseInt(threshSlid.value));
 }
 
 // ── GPX 입력 파싱 (trkpt / wpt) ──
@@ -4760,21 +4590,21 @@ function nearestIdx(lat, lon) {
   return best;
 }
 
-function calcStats(threshold) {
+function calcStats(threshold, pts = points) {
   let gain = 0, loss = 0;
-  let minEle = points[0].ele, maxEle = points[0].ele;
-  let baseEle = points[0].ele;
-  for (let i = 1; i < points.length; i++) {
-    const diff = points[i].ele - baseEle;
+  let minEle = pts[0].ele, maxEle = pts[0].ele;
+  let baseEle = pts[0].ele;
+  for (let i = 1; i < pts.length; i++) {
+    const diff = pts[i].ele - baseEle;
     if (threshold === 0) {
       if (diff > 0) gain += diff; else loss += -diff;
-      baseEle = points[i].ele;
+      baseEle = pts[i].ele;
     } else if (Math.abs(diff) >= threshold) {
       if (diff > 0) gain += diff; else loss += -diff;
-      baseEle = points[i].ele;
+      baseEle = pts[i].ele;
     }
-    if (points[i].ele < minEle) minEle = points[i].ele;
-    if (points[i].ele > maxEle) maxEle = points[i].ele;
+    if (pts[i].ele < minEle) minEle = pts[i].ele;
+    if (pts[i].ele > maxEle) maxEle = pts[i].ele;
   }
   return { gain, loss, minEle, maxEle };
 }
@@ -4810,13 +4640,6 @@ function renderGainCompare() {
   const el = document.getElementById('gainCompare');
   if (!lastResult || !lastResult.restoredCount) { el.textContent = ''; return; }
   el.textContent = t('ridingazuaLabel') + ': ' + fmtNum(Math.round(lastResult.ridingazuaGain)) + ' m';
-}
-
-function updateRef(threshold) {
-  const s = calcStats(threshold);
-  document.getElementById('refGain').textContent = fmtNum(Math.round(s.gain)) + ' m';
-  document.getElementById('refLoss').textContent = fmtNum(Math.round(s.loss)) + ' m';
-  document.getElementById('refNote').style.display = threshold === 0 ? 'inline' : 'none';
 }
 
 function decodeXml(s) {
