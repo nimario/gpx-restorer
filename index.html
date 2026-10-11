@@ -1189,7 +1189,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.38</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.39</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1537,7 +1537,7 @@
 
 </main>
 
-<footer id="footerText">v3.38 (2026.10.11) · Made by 오동도</footer>
+<footer id="footerText">v3.39 (2026.10.11) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1875,7 +1875,7 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.38';
+const APP_VERSION = 'v3.39';
 const APP_DATE = '2026.10.11';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
@@ -3416,27 +3416,31 @@ function tunnelWaypointLabel(name) {
     courseName: () => sCourseName.value,
     segGainLoss: (a, b) => s1CalcSegmentGainLoss(a, b),
     mountAfter: () => s1WptWrap,
+    param: () => s1Param.value.trim(),
     onChange: fn => s1ExtListeners.push(fn)
   };
   window.gpxrTab1Notify = () => s1ExtListeners.forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
-  async function s1LoadExt(key, remember) {
+  async function s1LoadExt(key) {
     if (!key || window.__gpxrExtLoaded) return;
     try {
       const r = await fetch(backendUrl() + '/ext', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key }) });
-      if (!r.ok) { if (!remember) try { localStorage.removeItem('gpxrExt'); } catch (e) {} return; }
+      if (!r.ok) return;
       const code = await r.text();
       window.__gpxrExtLoaded = true;
       const sc = document.createElement('script');
       sc.textContent = code;
+      window.__gpxrExtKey = key;
       document.head.appendChild(sc);
-      if (remember) try { localStorage.setItem('gpxrExt', key); } catch (e) {}
     } catch (e) {}
   }
-  s1Param.addEventListener('change', () => {
+  // Enter 없이도: 입력을 멈추고 0.5초 지나면 서버에 확인
+  let s1ExtTimer = null;
+  s1Param.addEventListener('input', () => {
+    clearTimeout(s1ExtTimer);
     const v = s1Param.value.trim();
-    if (v && v !== '오동도짱') s1LoadExt(v, true);
+    if (v && v !== '오동도짱') s1ExtTimer = setTimeout(() => s1LoadExt(v), 500);
   });
-  try { const k = localStorage.getItem('gpxrExt'); if (k) s1LoadExt(k, false); } catch (e) {}
+  try { localStorage.removeItem('gpxrExt'); } catch (e) {} // 이전 버전의 자동 불러오기 기록 정리
 
   // ═══════════════════════════════════════════════════════
   //  웨이포인트 지도 (① 스트라바 보정 탭) — 카카오맵 / OSM 전환 가능
