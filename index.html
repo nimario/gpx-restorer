@@ -426,8 +426,11 @@
   #paramInput:focus { border-color:var(--accent); }
 
   /* ── 매개변수 입력창 (웨이포인트 창 옆으로 이동) ── */
-  #s1WptParamBar, #wptParamBar {
+  #wptParamBar {
     display:none;
+  }
+  #s1WptParamBar { display:flex; }
+  #s1WptParamBar, #wptParamBar {
     align-items:center;
     gap:8px;
     margin:0 0 12px;
@@ -1189,7 +1192,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.39</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.40</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1537,7 +1540,7 @@
 
 </main>
 
-<footer id="footerText">v3.39 (2026.10.11) · Made by 오동도</footer>
+<footer id="footerText">v3.40 (2026.10.19) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1875,7 +1878,7 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.39';
+const APP_VERSION = 'v3.40';
 const APP_DATE = '2026.10.11';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
@@ -3417,6 +3420,18 @@ function tunnelWaypointLabel(name) {
     segGainLoss: (a, b) => s1CalcSegmentGainLoss(a, b),
     mountAfter: () => s1WptWrap,
     param: () => s1Param.value.trim(),
+    // 클라우드 저장용: 지금 작업을 GPX로, 받은 GPX를 파일처럼 불러오기
+    backend: () => backendUrl(),
+    buildGpx: () => s1BuildGpx((sCourseName.value || 'course').trim() || 'course'),
+    loadText: (filename, text, after) => {
+      const prev = s1Points;
+      handleSFile(new File([text], filename));
+      // 새 파일이 들어올 때까지 기다렸다가 다음 작업 (이전 파일이 열려 있어도 헷갈리지 않게)
+      if (after) { const fn = () => { if (s1Points !== prev && s1Points.length) after(); else setTimeout(fn, 200); }; setTimeout(fn, 300); }
+    },
+    setCourseName: v => { sCourseName.value = v; },
+    setParam: v => { s1Param.value = v; s1Param.dispatchEvent(new Event('input')); },
+    uploadZone: () => sUploadZone,
     onChange: fn => s1ExtListeners.push(fn)
   };
   window.gpxrTab1Notify = () => s1ExtListeners.forEach(fn => { try { fn(); } catch (e) { console.error(e); } });
@@ -4203,7 +4218,7 @@ function tunnelWaypointLabel(name) {
     sFileBadge.style.display = 'none';
     s1StatsGrid.style.display = 'none';
     s1WptHeadRow.style.display = 'none';
-    s1WptParamBar.style.display = 'none';
+    s1WptParamBar.style.display = 'flex';
     s1WptWrap.style.display = 'none';
     s1ChartWrap.style.display = 'none';
     sRunBtn.style.display = 'none';
