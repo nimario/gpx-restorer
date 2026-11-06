@@ -1192,7 +1192,7 @@
 <div class="top-row">
   <header>
     <div class="logo-icon" id="homeBtn" title="홈으로">⛰️</div>
-    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.40</span></h1>
+    <h1><span class="title-text" data-i18n="title">GPX 원본고도 복원기</span><span class="ver">v3.41</span></h1>
   </header>
   <div class="lang-switch">
     <button data-lang="ko" class="on">한</button>
@@ -1540,7 +1540,7 @@
 
 </main>
 
-<footer id="footerText">v3.40 (2026.10.19) · Made by 오동도</footer>
+<footer id="footerText">v3.41 (2026.11.06) · Made by 오동도</footer>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -1878,7 +1878,7 @@ function applyLang() {
 }
 
 // ── 버전 표기는 이 두 줄에서만 관리 (뱃지+푸터 둘 다 여기서 갱신됨) ──
-const APP_VERSION = 'v3.40';
+const APP_VERSION = 'v3.41';
 const APP_DATE = '2026.10.11';
 function renderFooter() {
   document.querySelector('.ver').textContent = APP_VERSION;
@@ -4849,7 +4849,8 @@ function decodeXml(s) {
   return el.value;
 }
 function escapeHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // 맥 파일에서 온 한글 이름은 NFD(자모 분리)일 수 있음 — GPX/TCX 안 코스·웨이포인트 이름도 NFC로 (가민이 자모 분리로 표시)
+  return String(s).normalize('NFC').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 function calcSegmentGainLoss(fromIdx, toIdx) {
